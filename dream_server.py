@@ -80,7 +80,7 @@ def send_dream_email(dream_data):
         return False
 
 # ---- 共通関数 ----
-def get_db():
+def get_db(db_path=None): # Add optional db_path argument
     if DB_TYPE == "postgres":
         url = os.getenv("DATABASE_URL")
         if not url:
@@ -93,12 +93,13 @@ def get_db():
             print(f"DB connection failed: {e}", file=sys.stderr)
             return None
     else:
-        conn = sqlite3.connect(DB_PATH)
+        sqlite_db_path = db_path if db_path else DB_PATH # Use provided path or fallback
+        conn = sqlite3.connect(sqlite_db_path)
         conn.row_factory = sqlite3.Row  # Enable column name access
         return conn
 
-def init_db():
-    conn = get_db()
+def init_db(db_path=None):
+    conn = get_db(db_path) # Pass db_path to get_db
     if not conn:
         print("ERROR: Failed to connect to database", file=sys.stderr)
         return
@@ -228,8 +229,8 @@ def generate_dream(seed_content=None):
         return None
 
 # データベース操作
-def save_dream(content, source='ai', seed_id=None):
-    conn = get_db()
+def save_dream(content, source='ai', seed_id=None, db_path=None):
+    conn = get_db(db_path) # Pass db_path to get_db
     c = conn.cursor()
     length = len(content)
     if DB_TYPE == "postgres":
@@ -251,8 +252,8 @@ def save_dream(content, source='ai', seed_id=None):
 
     return dream_id
 
-def save_seed(content):
-    conn = get_db()
+def save_seed(content, db_path=None):
+    conn = get_db(db_path) # Pass db_path to get_db
     c = conn.cursor()
     if DB_TYPE == "postgres":
         c.execute("INSERT INTO seeds (content) VALUES (%s) RETURNING id", (content,))
