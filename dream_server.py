@@ -18,6 +18,7 @@ try:
     if os.getenv("DATABASE_URL"):
         DB_TYPE = "postgres"
     else:
+        import sqlite3
         DB_TYPE = "sqlite"
 except ImportError:
     import sqlite3
@@ -104,11 +105,17 @@ def init_db():
                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                       length INTEGER,
                       source TEXT DEFAULT 'ai',
-                      seed_id INTEGER NULL)''')
+                      seed_id INTEGER NULL,
+                      is_read BOOLEAN DEFAULT FALSE)''')
         c.execute('''CREATE TABLE IF NOT EXISTS seeds
                      (id SERIAL PRIMARY KEY,
                       content TEXT NOT NULL,
                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+        # 既存テーブルに列がなければ追加
+        try:
+            c.execute("ALTER TABLE dreams ADD COLUMN is_read BOOLEAN DEFAULT FALSE")
+        except:
+            pass
     else:
         c.execute('''CREATE TABLE IF NOT EXISTS dreams
                      (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,6 +128,11 @@ def init_db():
                      (id INTEGER PRIMARY KEY AUTOINCREMENT,
                       content TEXT NOT NULL,
                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+        # SQLiteにis_read列を追加（既存テーブル用）
+        try:
+            c.execute("ALTER TABLE dreams ADD COLUMN is_read BOOLEAN DEFAULT 0")
+        except:
+            pass
     conn.commit()
     conn.close()
 
@@ -238,26 +250,47 @@ def get_dream(dream_id):
     conn = get_db()
     c = conn.cursor()
     if DB_TYPE == "postgres":
-        c.execute("SELECT id, content, created_at, length, source, seed_id FROM dreams WHERE id = %s", (dream_id,))
+        c.execute("SELECT id, content, created_at, length, source, seed_id, is_read FROM dreams WHERE id = %s", (dream_id,))
     else:
-        c.execute("SELECT id, content, created_at, length, source, seed_id FROM dreams WHERE id = ?", (dream_id,))
+        c.execute("SELECT id, content, created_at, length, source, seed_id, is_read FROM dreams WHERE id = ?", (dream_id,))
     row = c.fetchone()
     conn.close()
     if row:
         return {"id": row[0], "content": row[1], "created_at": row[2], "length": row[3],
-                "source": row[4], "seed_id": row[5]}
+                "source": row[4], "seed_id": row[5], "is_read": row[6]}
     return None
 
-def get_all_dreams(limit=20, offset=0):
+def get_all_dreams(limit=20, offset=0, include_read=True):
     conn = get_db()
     c = conn.cursor()
     if DB_TYPE == "postgres":
-        c.execute("SELECT id, content, created_at, length, source FROM dreams ORDER BY id DESC LIMIT %s OFFSET %s", (limit, offset))
+        if include_read:
+            c.execute("SELECT id, content, created_at, length, source, seed_id, is_read FROM dreams ORDER BY id DESC LIMIT %s OFFSET %s", (limit, offset))
+        else:
+            c.execute("SELECT id, content, created_at, length, source, seed_id, is_read FROM dreams WHERE is_read = FALSE ORDER BY id DESC LIMIT %s OFFSET %s", (limit, offset))
     else:
-        c.execute("SELECT id, content, created_at, length, source FROM dreams ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset))
+        if include_read:
+            c.execute("SELECT id, content, created_at, length, source, seed_id, is_read FROM dreams ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset))
+        else:
+            c.execute("SELECT id, content, created_at, length, source, seed_id, is_read FROM dreams WHERE is_read = 0 ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset))
     rows = c.fetchall()
     conn.close()
-    return [{"id": r[0], "content": r[1], "created_at": r[2], "length": r[3], "source": r[4]} for r in rows]
+    return [{"id": r[0], "content": r[1], "created_at": r[2], "length": r[3],
+            "source": r[4], "seed_id": r[5], "is_read": r[6]} for r in rows]
+
+def get_unread_dreams(limit=20):
+    return get_all_dreams(limit=limit, offset=0, include_read=False)
+
+def mark_as_read(dream_id):
+    conn = get_db()
+    c = conn.cursor()
+    if DB_TYPE == "postgres":
+        c.execute("UPDATE dreams SET is_read = TRUE WHERE id = %s", (dream_id,))
+    else:
+        c.execute("UPDATE dreams SET is_read = 1 WHERE id = ?", (dream_id,))
+    conn.commit()
+    conn.close()
+    return True
 
 def get_all_seeds():
     conn = get_db()
