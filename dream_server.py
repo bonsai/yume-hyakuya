@@ -67,6 +67,7 @@ def send_dream_email(dream_data):
         msg['Subject'] = Header(f"新しい夢日記 #{dream_data['id']}", 'utf-8')
         msg['From'] = smtp_user
         msg['To'] = to_email
+        msg['Date'] = formatdate(localtime=True)
         
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
