@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS
 import xml.etree.ElementTree as ET
+import threading
 try:
     import psycopg2
     from psycopg2.extras import DictCursor
@@ -236,10 +237,11 @@ def save_dream(content, source='ai', seed_id=None):
     conn.commit()
     conn.close()
 
-    # メール送信
+    # メール送信 (非同期)
     dream_data = get_dream(dream_id)
     if dream_data:
-        send_dream_email(dream_data)
+        email_thread = threading.Thread(target=send_dream_email, args=(dream_data,))
+        email_thread.start()
 
     return dream_id
 
