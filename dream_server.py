@@ -110,6 +110,40 @@ def init_db():
     conn.commit()
     conn.close()
 
+def load_initial_data():
+    """Neonが空の場合、static/dream.json から初期データをロード"""
+    conn = get_db()
+    c = conn.cursor()
+    if DB_TYPE == "postgres":
+        c.execute("SELECT COUNT(*) FROM dreams")
+    else:
+        c.execute("SELECT COUNT(*) FROM dreams")
+    count = c.fetchone()[0]
+    if count > 0:
+        conn.close()
+        return
+    # 空なら static/dream.json をロード
+    try:
+        static_path = os.path.join(base_dir, 'static', 'dream.json')
+        with open(static_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        dreams = data.get('dreams', [])
+        for d in dreams:
+            content = d.get('text', '')
+            length = len(content)
+            source = 'initial'
+            if DB_TYPE == "postgres":
+                c.execute("INSERT INTO dreams (content, length, source) VALUES (%s, %s, %s)",
+                          (content, length, source))
+            else:
+                c.execute("INSERT INTO dreams (content, length, source) VALUES (?, ?, ?)",
+                          (content, length, source))
+        conn.commit()
+        print(f"Loaded {len(dreams)} initial dreams from static/dream.json")
+    except Exception as e:
+        print(f"Failed to load initial data: {e}", file=sys.stderr)
+    conn.close()
+
 def normalize_to_400(text):
     flat = re.sub(r'\s+', '', text)
     if len(flat) > 400:
@@ -165,6 +199,12 @@ def save_dream(content, source='ai', seed_id=None):
         dream_id = c.lastrowid
     conn.commit()
     conn.close()
+
+    # メール送信
+    dream_data = get_dream(dream_id)
+    if dream_data:
+        send_dream_email(dream_data)
+
     return dream_id
 
 def save_seed(content):
@@ -383,5 +423,7 @@ if __name__ == '__main__':
     elif args.single:
         single_generate()
     else:
+        # 初期データのロード（Neonが空の場合）
+        load_initial_data()
         print(f"Starting Flask server on port {args.port}...")
         app.run(host='0.0.0.0', port=args.port, debug=True)
