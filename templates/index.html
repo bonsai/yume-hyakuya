@@ -428,8 +428,8 @@
                                                 "夢の取得に失敗しました",
                                           );
                                     const dream = await res.json();
-                                    fullText = dream.text || "";
-                                    fullText = normalizeTo400(fullText);
+                                    fullText = dream.content || "";
+                                     fullText = normalizeTo140(fullText);
                                     characters = fullText.split("");
                                     currentDreamId = dream.id;
                                     initGrid();
@@ -438,12 +438,12 @@
                               }
                         }
 
-                        function normalizeTo400(str) {
+                        function normalizeTo140(str) {
                               let flat = str.replace(/\s+/g, "");
-                              if (flat.length > 400) return flat.slice(0, 400);
-                              if (flat.length < 400)
+                              if (flat.length > 140) return flat.slice(0, 140);
+                              if (flat.length < 140)
                                     return (
-                                          flat + "。".repeat(400 - flat.length)
+                                          flat + "。".repeat(140 - flat.length)
                                     );
                               return flat;
                         }
@@ -655,7 +655,7 @@
                                           );
 
                                     // 生成された夢を表示
-                                    characters = dreamData.text.split("");
+                                    characters = dreamData.content.split("");
                                     revealedCount = 0;
                                     resetGrid();
                                     startAnimation();

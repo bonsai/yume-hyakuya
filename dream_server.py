@@ -351,13 +351,17 @@ def random_dream():
     seed_id = request.args.get('seed_id')
     seed_content = None
     if seed_id:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT content FROM seeds WHERE id = ?", (seed_id,))
-        row = c.fetchone()
-        conn.close()
-        if row:
-            seed_content = row[0]
+        conn = get_db()
+        if conn:
+            c = conn.cursor()
+            if DB_TYPE == "postgres":
+                c.execute("SELECT content FROM seeds WHERE id = %s", (seed_id,))
+            else:
+                c.execute("SELECT content FROM seeds WHERE id = ?", (seed_id,))
+            row = c.fetchone()
+            conn.close()
+            if row:
+                seed_content = row[0]
     content = generate_dream(seed_content)
     if not content:
         return jsonify({"error": "夢の生成に失敗しました"}), 500
