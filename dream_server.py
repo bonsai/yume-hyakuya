@@ -329,6 +329,14 @@ def get_all_seeds():
 app = Flask(__name__)
 init_db()
 
+def serialize_dream_data(dream_data):
+    if isinstance(dream_data, list):
+        return [serialize_dream_data(d) for d in dream_data]
+    if isinstance(dream_data, dict):
+        if 'created_at' in dream_data and isinstance(dream_data['created_at'], datetime):
+            dream_data['created_at'] = dream_data['created_at'].isoformat()
+    return dream_data
+
 # レスポンスフォーマット
 def format_response(data, format_type):
     if format_type == "xml":
@@ -413,6 +421,8 @@ def random_dream():
         dream_id = save_dream(content, source=source, seed_id=seed_id if seed_content else None)
         dream = get_dream(dream_id)
         fmt = request.args.get('format', 'json')
+        if fmt == 'json':
+            dream = serialize_dream_data(dream)
         return format_response(dream, fmt)
     except Exception as e:
         print(f"Error saving/retrieving dream: {e}", file=sys.stderr)
@@ -424,6 +434,8 @@ def list_dreams():
     offset = int(request.args.get('offset', 0))
     dreams = get_all_dreams(limit=limit, offset=offset)
     fmt = request.args.get('format', 'json')
+    if fmt == 'json':
+        dreams = serialize_dream_data(dreams)
     return format_response(dreams, fmt)
 
 @app.route('/api/dream/<int:dream_id>')
@@ -432,6 +444,8 @@ def get_dream_api(dream_id):
     if not dream:
         return jsonify({"error": "夢が見つかりません"}), 404
     fmt = request.args.get('format', 'json')
+    if fmt == 'json':
+        dream = serialize_dream_data(dream)
     return format_response(dream, fmt)
 
 @app.route('/api/seed/submit', methods=['POST'])
