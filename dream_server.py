@@ -9,12 +9,13 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS
 import xml.etree.ElementTree as ET
-
-app = Flask(__name__)
-CORS(app)
-import sqlite3
-
-DB_TYPE = "sqlite"
+try:
+    import psycopg2
+    from psycopg2.extras import DictCursor
+    DB_TYPE = "postgres"
+except ImportError:
+    import sqlite3
+    DB_TYPE = "sqlite"
 
 # エンコーディング設定
 if hasattr(sys.stdout, 'reconfigure'):
@@ -39,20 +40,41 @@ API_BASE = "https://api.ai.sakura.ad.jp/v1"
 DB_PATH = os.path.join(base_dir, "yume.db")
 
 # ---- 共通関数 ----
+def get_db():
+    if DB_TYPE == "postgres":
+        url = os.getenv("DATABASE_URL")
+        conn = psycopg2.connect(url, cursor_factory=DictCursor)
+    else:
+        conn = sqlite3.connect(DB_PATH)
+    return conn
+
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS dreams
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  content TEXT NOT NULL,
-                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                  length INTEGER,
-                  source TEXT DEFAULT 'ai',
-                  seed_id INTEGER NULL)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS seeds
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  content TEXT NOT NULL,
-                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    if DB_TYPE == "postgres":
+        c.execute('''CREATE TABLE IF NOT EXISTS dreams
+                     (id SERIAL PRIMARY KEY,
+                      content TEXT NOT NULL,
+                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                      length INTEGER,
+                      source TEXT DEFAULT 'ai',
+                      seed_id INTEGER NULL)''')
+        c.execute('''CREATE TABLE IF NOT EXISTS seeds
+                     (id SERIAL PRIMARY KEY,
+                      content TEXT NOT NULL,
+                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    else:
+        c.execute('''CREATE TABLE IF NOT EXISTS dreams
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      content TEXT NOT NULL,
+                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                      length INTEGER,
+                      source TEXT DEFAULT 'ai',
+                      seed_id INTEGER NULL)''')
+        c.execute('''CREATE TABLE IF NOT EXISTS seeds
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      content TEXT NOT NULL,
+                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
     conn.close()
 
@@ -98,29 +120,41 @@ def generate_dream(seed_content=None):
 
 # データベース操作
 def save_dream(content, source='ai', seed_id=None):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     c = conn.cursor()
     length = len(content)
-    c.execute("INSERT INTO dreams (content, length, source, seed_id) VALUES (?, ?, ?, ?)",
-              (content, length, source, seed_id))
+    if DB_TYPE == "postgres":
+        c.execute("INSERT INTO dreams (content, length, source, seed_id) VALUES (%s, %s, %s, %s) RETURNING id",
+                  (content, length, source, seed_id))
+        dream_id = c.fetchone()[0]
+    else:
+        c.execute("INSERT INTO dreams (content, length, source, seed_id) VALUES (?, ?, ?, ?)",
+                  (content, length, source, seed_id))
+        dream_id = c.lastrowid
     conn.commit()
-    dream_id = c.lastrowid
     conn.close()
     return dream_id
 
 def save_seed(content):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     c = conn.cursor()
-    c.execute("INSERT INTO seeds (content) VALUES (?)", (content,))
+    if DB_TYPE == "postgres":
+        c.execute("INSERT INTO seeds (content) VALUES (%s) RETURNING id", (content,))
+        seed_id = c.fetchone()[0]
+    else:
+        c.execute("INSERT INTO seeds (content) VALUES (?)", (content,))
+        seed_id = c.lastrowid
     conn.commit()
-    seed_id = c.lastrowid
     conn.close()
     return seed_id
 
 def get_dream(dream_id):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT id, content, created_at, length, source, seed_id FROM dreams WHERE id = ?", (dream_id,))
+    if DB_TYPE == "postgres":
+        c.execute("SELECT id, content, created_at, length, source, seed_id FROM dreams WHERE id = %s", (dream_id,))
+    else:
+        c.execute("SELECT id, content, created_at, length, source, seed_id FROM dreams WHERE id = ?", (dream_id,))
     row = c.fetchone()
     conn.close()
     if row:
@@ -129,17 +163,23 @@ def get_dream(dream_id):
     return None
 
 def get_all_dreams(limit=20, offset=0):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT id, content, created_at, length, source FROM dreams ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset))
+    if DB_TYPE == "postgres":
+        c.execute("SELECT id, content, created_at, length, source FROM dreams ORDER BY id DESC LIMIT %s OFFSET %s", (limit, offset))
+    else:
+        c.execute("SELECT id, content, created_at, length, source FROM dreams ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset))
     rows = c.fetchall()
     conn.close()
     return [{"id": r[0], "content": r[1], "created_at": r[2], "length": r[3], "source": r[4]} for r in rows]
 
 def get_all_seeds():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT id, content FROM seeds")
+    if DB_TYPE == "postgres":
+        c.execute("SELECT id, content FROM seeds")
+    else:
+        c.execute("SELECT id, content FROM seeds")
     rows = c.fetchall()
     conn.close()
     return rows

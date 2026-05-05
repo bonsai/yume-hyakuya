@@ -1,5 +1,7 @@
+.exe.
 .env
 __pycache__/
 *.pyc
-yume.db
+*.db
+*.sql
 *.log
