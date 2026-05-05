@@ -568,10 +568,13 @@
                         }
 
                         function normalizeText(str) {
-                              let flat = str.replace(/\s+/g, "");
-                              // Limit to 200 characters
-                              if (flat.length > 200) {
-                                    return flat.slice(0, 200);
+                              // 空白除去のみ、200字超えは切り捨て、不足はそのまま
+                              const flat = str.replace(/\s+/g, "");
+                              if (flat.length > TOTAL) {
+                                    return flat.slice(0, TOTAL);
+                              }
+                              if (flat.length < TOTAL) {
+                                    return flat + '。'.repeat(TOTAL - flat.length); // Add padding
                               }
                               return flat;
                         }
