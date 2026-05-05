@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>夢日記システム - 動き時系列</title>
+<style>
+body { font-family: sans-serif; padding: 20px; }
+.timeline { position: relative; max-width: 800px; margin: 0 auto; }
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 30px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #ccc;
+}
+.item {
+    position: relative;
+    margin-bottom: 20px;
+    padding-left: 60px;
+}
+.item::before {
+    content: '';
+    position: absolute;
+    left: 24px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4CAF50;
+    border: 2px solid #fff;
+}
+.item h3 { margin: 0 0 5px 0; color: #333; }
+.item p { margin: 0; color: #666; }
+.server { border-left: 3px solid #2196F3; padding-left: 10px; }
+.user { border-left: 3px solid #FF9800; padding-left: 10px; }
+.api { border-left: 3px solid #9C27B0; padding-left: 10px; }
+</style>
+</head>
+<body>
+
+<h1>夢日記生成システム - 動き時系列</h1>
+
+<div class="timeline">
+    <div class="item">
+        <h3>1. ユーザー入力</h3>
+        <p class="user">夢の種（例: "火星の植樹都市で眠る旅行者"）を入力</p>
+    </div>
+
+    <div class="item">
+        <h3>2. 外部トリガー</h3>
+        <p class="user">HTTP POST → <code>repository_dispatch</code> (event_type: generate-dream)</p>
+    </div>
+
+    <div class="item">
+        <h3>3. GitHub Actions起動</h3>
+        <p class="server">workflow: <code>generate-dream.yml</code> が実行される</p>
+    </div>
+
+    <div class="item">
+        <h3>4. Sakura APIリクエスト</h3>
+        <p class="api">POST https://api.ai.sakura.ad.jp/v1/chat/completions<br>
+        種を含むプロンプトを送信、星新一風SF短編を生成</p>
+    </div>
+
+    <div class="item">
+        <h3>5. レスポンス受信</h3>
+        <p class="api">400字に正規化 → JSONとMarkdownを生成</p>
+    </div>
+
+    <div class="item">
+        <h3>6. Wiki更新</h3>
+        <p class="server">GitHub Wikiをクローン → JSON/MDファイルを追加 → コミット&プッシュ</p>
+    </div>
+
+    <div class="item">
+        <h3>7. Supabase保存（オプション）</h3>
+        <p class="server">PostgreSQL (Supabase) の <code>dreams</code> テーブルに保存<br>
+        Flaskサーバーからも読み書き可能</p>
+    </div>
+
+    <div class="item">
+        <h3>8. 閲覧</h3>
+        <p class="user">Wikiページまたは <code>/api/dreams</code> で夢日記を閲覧</p>
+    </div>
+</div>
+
+<h2>サーバーAPIエンドポイント</h2>
+<ul>
+    <li><code>GET /api/dreams</code> - 夢日記一覧</li>
+    <li><code>GET /api/dream/random</code> - ランダム生成・保存</li>
+    <li><code>POST /api/seed/submit</code> - 種を投稿</li>
+    <li><code>GET /api/seeds</code> - 種一覧</li>
+</ul>
+
+</body>
+</html>
