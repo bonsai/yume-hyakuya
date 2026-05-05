@@ -75,13 +75,24 @@ def send_dream_email(dream_data):
 def get_db():
     if DB_TYPE == "postgres":
         url = os.getenv("DATABASE_URL")
-        conn = psycopg2.connect(url, cursor_factory=DictCursor)
+        if not url:
+            print("ERROR: DATABASE_URL is not set", file=sys.stderr)
+            return None
+        try:
+            conn = psycopg2.connect(url, cursor_factory=DictCursor)
+            return conn
+        except Exception as e:
+            print(f"DB connection failed: {e}", file=sys.stderr)
+            return None
     else:
         conn = sqlite3.connect(DB_PATH)
-    return conn
+        return conn
 
 def init_db():
     conn = get_db()
+    if not conn:
+        print("ERROR: Failed to connect to database", file=sys.stderr)
+        return
     c = conn.cursor()
     if DB_TYPE == "postgres":
         c.execute('''CREATE TABLE IF NOT EXISTS dreams
