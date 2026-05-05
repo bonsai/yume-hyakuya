@@ -855,8 +855,17 @@
                               }
                         }
                         
-                        function useSeed(seedId) {
-                              window.location.href = `/api/dream/random?seed_id=${seedId}`;
+                        async function useSeed(seedId) {
+                              try {
+                                    const res = await fetch(`/api/dream/random?seed_id=${seedId}`);
+                                    if (!res.ok) {
+                                          throw new Error("夢の取得に失敗しました");
+                                    }
+                                    const dream = await res.json();
+                                    viewDream(dream.id);
+                              } catch (err) {
+                                    alert("エラー: " + err.message);
+                              }
                         }
                         
                         function viewDream(dreamId) {
