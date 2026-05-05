@@ -5,6 +5,9 @@ import requests
 import random
 import time
 import json
+import smtplib
+from email.mime.text import MIMEText
+from email.header import Header
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS
@@ -38,6 +41,35 @@ for dotenv_path in dotenv_paths:
 TOKEN = os.getenv("SAKURA_API_TOKEN")
 API_BASE = "https://api.ai.sakura.ad.jp/v1"
 DB_PATH = os.path.join(base_dir, "yume.db")
+
+# ---- メール送信関数 ----
+def send_dream_email(dream_data):
+    """生成された夢をメールで送信"""
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+    to_email = os.getenv("TO_EMAIL")
+    
+    if not all([smtp_user, smtp_pass, to_email]):
+        print("Email settings incomplete, skipping email", file=sys.stderr)
+        return False
+    
+    try:
+        msg = MIMEText(f"夢ID: {dream_data['id']}\n日付: {dream_data['date']}\n文字数: {dream_data['length']}\n\n{dream_data['text']}")
+        msg['Subject'] = Header(f"新しい夢日記 #{dream_data['id']}", 'utf-8')
+        msg['From'] = smtp_user
+        msg['To'] = to_email
+        
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        print(f"Email sent for dream {dream_data['id']}")
+        return True
+    except Exception as e:
+        print(f"Email failed: {e}", file=sys.stderr)
+        return False
 
 # ---- 共通関数 ----
 def get_db():
