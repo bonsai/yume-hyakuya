@@ -4,13 +4,13 @@ import os
 import json
 from dotenv import load_dotenv
 
-# テスト用DB設定
-os.environ['DATABASE_URL'] = ''
-os.environ['SAKURA_API_TOKEN'] = 'test_token'
-
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from dream_server import app, init_db, get_db, save_dream, save_seed
+
+# テスト用DB設定
+os.environ['DATABASE_URL'] = ''
+os.environ['SAKURA_API_TOKEN'] = 'test_token'
 
 @pytest.fixture
 def client():
