@@ -7,7 +7,11 @@ import time
 import json
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, Response
+from flask_cors import CORS
 import xml.etree.ElementTree as ET
+
+app = Flask(__name__)
+CORS(app)
 import sqlite3
 
 DB_TYPE = "sqlite"
