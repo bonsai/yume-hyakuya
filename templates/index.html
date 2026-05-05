@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>曇晴筆記 | iPad横版</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+        body {
+            background: #b8a481;
+            min-height: 100vh;
+            font-family: 'Kaisei Tokumin', 'Noto Serif JP', serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        /* 左侧模式图标栏 */
+        .mode-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 20px 10px;
+            background: #2b231b;
+            border-radius: 24px;
+            width: 120px;
+            align-items: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .mode-tab {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            background: #e2d4be;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #513e28;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 3px solid transparent;
+        }
+        .mode-tab.active {
+            background: #8f6a48;
+            color: #fef0df;
+            border-color: #fef0df;
+        }
+        .mode-tab .icon {
+            font-size: 1.8rem;
+            margin-bottom: 4px;
+        }
+        /* 右侧内容区 */
+        .content-area {
+            flex: 1;
+            background: #2b231b;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            min-height: 80vh;
+            position: relative;
+        }
+        /* 各模式区域共通 */
+        .mode-content {
+            display: none;
+            height: 100%;
+        }
+        .mode-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        /* 読むモード */
+        .manuscript-area {
+            align-items: center;
+            gap: 20px;
+        }
+        .manuscript {
+            background-color: #fef7e8;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: inset 0 0 0 1px #fff5e4, 0 6px 14px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 900px;
+        }
+        .grid-14x10 {
+            display: grid;
+            grid-template-columns: repeat(14, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 0;
+            width: 100%;
+            aspect-ratio: 14/10;
+            background-color: #fffcf0;
+            border: 2px solid #a89470;
+        }
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(18px, 3.5vw, 36px);
+            font-weight: 470;
+            color: #2e241d;
+            border-right: 1px solid #c4b48a;
+            border-bottom: 1px solid #c4b48a;
+            background-color: #fffcf0;
+            transform-origin: center;
+            will-change: transform, opacity;
+        }
+        .cell:nth-child(14n) { border-right: none; }
+        .cell:nth-child(n+131) { border-bottom: none; }
+        @keyframes brushPop {
+            0% { transform: scale(2.1) rotate(-3deg); opacity: 0; filter: blur(4px); }
+            45% { transform: scale(1.2) rotate(1deg); opacity: 0.95; filter: blur(0px); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+        }
+        .cell.pop { animation: brushPop 0.32s cubic-bezier(0.3, 1.2, 0.5, 1) forwards; }
+        .progress-chip {
+            background: #cebb97;
+            padding: 8px 16px;
+            border-radius: 32px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #2a211a;
+            text-align: center;
+        }
+        /* 投稿モード */
+        .post-area {
+            padding: 20px;
+            background: #3a2e24;
+            border-radius: 12px;
+            color: #eedbbc;
+            gap: 16px;
+        }
+        .post-area h3 {
+            color: #fef0df;
+            margin-bottom: 8px;
+        }
+        .post-area textarea {
+            width: 100%;
+            height: 120px;
+            background: #2b231b;
+            border: 1px solid #5a4e44;
+            color: #eedbbc;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+        .post-area button {
+            width: 100%;
+            padding: 12px;
+            background: #8f6a48;
+            border: none;
+            color: #fef0df;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        /* 調節モード */
+        .control-area {
+            padding: 20px;
+            background: #e2d4be;
+            border-radius: 12px;
+            gap: 20px;
+        }
+        .control-area h3 {
+            color: #513e28;
+            margin-bottom: 16px;
+        }
+        .ctrl-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            background: #fcf3e2;
+            padding: 12px;
+            border-radius: 40px;
+        }
+        .ctrl-group label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #513e28;
+            background: #eadbc2;
+            padding: 6px 14px;
+            border-radius: 30px;
+            white-space: nowrap;
+        }
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #bcab8a;
+            border-radius: 10px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #6a4f32;
+            cursor: pointer;
+            border: none;
+        }
+        .value-badge {
+            background: #2f261e;
+            color: #eedbbc;
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-family: monospace;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+        .control-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .control-buttons button {
+            flex: 1;
+            padding: 12px;
+            background: #8f6a48;
+            border: none;
+            color: #fef0df;
+            border-radius: 40px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .control-buttons button:active { transform: scale(0.96); background: #6b4d30; }
+        .footnote {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.7rem;
+            color: #dacaa8;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- 左侧模式图标栏 -->
+    <div class="mode-sidebar">
+        <div class="mode-tab active" data-mode="read">
+            <div class="icon">📖</div>
+            <div>読む</div>
+        </div>
+        <div class="mode-tab" data-mode="post">
+            <div class="icon">✉️</div>
+            <div>投稿</div>
+        </div>
+        <div class="mode-tab" data-mode="adjust">
+            <div class="icon">⚙️</div>
+            <div>調節</div>
+        </div>
+    </div>
+
+    <!-- 右侧内容区 -->
+    <div class="content-area">
+        <!-- 読むモード -->
+        <div class="mode-content manuscript-area active" id="readArea">
+            <div class="manuscript">
+                <div class="grid-14x10" id="manuscriptGrid"></div>
+            </div>
+        </div>
+
+        <!-- 投稿モード -->
+        <div class="mode-content post-area" id="postArea">
+            <h3>夢の種を投稿</h3>
+            <form id="seedForm">
+                <textarea placeholder="夢の種（アイデア）を入力してください..."></textarea>
+                <button type="submit">投稿して夢を生成</button>
+            </form>
+            <div class="footnote" style="margin-top:12px;">投稿するとAIが夢を生成し、自動表示します</div>
+        </div>
+
+        <!-- 調節モード -->
+        <div class="mode-content control-area" id="adjustArea">
+            <h3>表示速度調節</h3>
+            <div class="ctrl-group">
+                <label>⚡速度</label>
+                <input type="range" id="speedSlider" min="50" max="500" step="10" value="200">
+                <span id="speedVal" class="value-badge">200ms</span>
+            </div>
+            <div class="control-buttons">
+                <button id="replayBtn">☁️ 筆洗う・再演</button>
+                <button id="newDreamBtn">🌙 新しい夢</button>
+            </div>
+            <div class="progress-chip" id="progressStat2">0 / 140</div>
+        </div>
+
+        <div class="footnote">星新一風SF夢日記 — 欲望の断片を書き留める</div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let fullText = '';
+        let characters = [];
+        let allDreams = [];
+        
+        async function loadDreamsFromJSON() {
+            try {
+                const response = await fetch('dream.json');
+                const data = await response.json();
+                allDreams = data.dreams || [];
+                return allDreams;
+            } catch (error) {
+                console.error('JSON読み込みエラー:', error);
+                return [];
+            }
+        }
+        
+        async function fetchDream(dreamId = null) {
+            if (allDreams.length === 0) {
+                await loadDreamsFromJSON();
+            }
+            let dream;
+            if (dreamId) {
+                dream = allDreams.find(d => d.id == dreamId);
+            } else {
+                dream = allDreams[Math.floor(Math.random() * allDreams.length)];
+            }
+            if (!dream) {
+                alert('夢が見つかりません');
+                return;
+            }
+            fullText = dream.text || '';
+            fullText = normalizeTo140(fullText);
+            characters = fullText.split('');
+            currentDreamId = dream.id;
+            initGrid();
+        }
+        
+        function normalizeTo140(str) {
+            let flat = str.replace(/\s+/g, '');
+            if (flat.length > 140) return flat.slice(0,140);
+            if (flat.length < 140) return flat + '。'.repeat(140 - flat.length);
+            return flat;
+        }
+        
+        const gridContainer = document.getElementById('manuscriptGrid');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedVal = document.getElementById('speedVal');
+        const replayBtn = document.getElementById('replayBtn');
+        const newDreamBtn = document.getElementById('newDreamBtn');
+        const progressStat2 = document.getElementById('progressStat2');
+        
+        let cells = [];
+        let revealedCount = 0;
+        let timer = null;
+        let isAnimating = false;
+        let currentSpeed = 200;
+        
+        function initGrid() {
+            buildEmptyGrid();
+            currentSpeed = parseInt(speedSlider.value, 10);
+            speedVal.innerText = currentSpeed + 'ms';
+            startAnimation();
+        }
+        
+        function buildEmptyGrid() {
+            gridContainer.innerHTML = '';
+            cells = [];
+            for (let i = 0; i < 140; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.textContent = '';
+                gridContainer.appendChild(cell);
+                cells.push(cell);
+            }
+        }
+        
+        function resetGrid() {
+            for (let i = 0; i < 140; i++) {
+                cells[i].textContent = '';
+                cells[i].classList.remove('pop');
+            }
+            revealedCount = 0;
+            updateProgressText();
+        }
+        
+        function revealCharacterAtIndex(index) {
+            if (index >= 140) return;
+            const cell = cells[index];
+            if (cell.textContent !== '') return;
+            const targetChar = characters[index];
+            cell.textContent = targetChar;
+            cell.classList.remove('pop');
+            void cell.offsetWidth;
+            cell.classList.add('pop');
+            setTimeout(() => { cell.classList.remove('pop'); }, 350);
+        }
+        
+        function burstReveal() {
+            if (!isAnimating) return;
+            if (revealedCount >= 140) {
+                if (timer) { clearInterval(timer); timer = null; isAnimating = false; }
+                const text = '✨ 筆が止まる — 百四十の星が瞬く ✨';
+                progressStat2.textContent = text;
+                return;
+            }
+            const nextIndex = revealedCount;
+            if (nextIndex < 140) revealCharacterAtIndex(nextIndex);
+            revealedCount += 1;
+            updateProgressText();
+            if (revealedCount >= 140) {
+                if (timer) { clearInterval(timer); timer = null; isAnimating = false; }
+                const text = '✨ 筆が止まる — 百四十の星が瞬く ✨';
+                progressStat2.textContent = text;
+            }
+        }
+        
+        function updateProgressText() {
+            const text = `${revealedCount} / 140 字  曇→晴`;
+            progressStat2.textContent = text;
+        }
+        
+        function startAnimation() {
+            if (timer) { clearInterval(timer); timer = null; }
+            resetGrid();
+            revealedCount = 0;
+            isAnimating = true;
+            burstReveal();
+            timer = setInterval(burstReveal, currentSpeed);
+        }
+        
+        speedSlider.addEventListener('input', (e) => {
+            currentSpeed = parseInt(e.target.value, 10);
+            speedVal.innerText = currentSpeed + 'ms';
+            if (isAnimating && timer) {
+                clearInterval(timer);
+                timer = setInterval(burstReveal, currentSpeed);
+            }
+        });
+        
+        replayBtn.addEventListener('click', () => {
+            if (timer) { clearInterval(timer); timer = null; }
+            startAnimation();
+        });
+        
+        newDreamBtn.addEventListener('click', () => {
+            fetchDream();
+        });
+        
+        // モード切り替え
+        const modeTabs = document.querySelectorAll('.mode-tab');
+        const readArea = document.getElementById('readArea');
+        const postArea = document.getElementById('postArea');
+        const adjustArea = document.getElementById('adjustArea');
+        
+        modeTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                modeTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const mode = tab.dataset.mode;
+                readArea.classList.remove('active');
+                postArea.classList.remove('active');
+                adjustArea.classList.remove('active');
+                if (mode === 'read') {
+                    readArea.classList.add('active');
+                    // 読むモード選択時に自動再生開始
+                    if (timer) { clearInterval(timer); timer = null; }
+                    startAnimation();
+                } else if (mode === 'post') {
+                    postArea.classList.add('active');
+                } else if (mode === 'adjust') {
+                    adjustArea.classList.add('active');
+                }
+            });
+        });
+        
+        // 投稿フォーム（Sakura API使用）
+        const seedForm = document.getElementById('seedForm');
+        seedForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const textarea = seedForm.querySelector('textarea');
+            const content = textarea.value.trim();
+            if (!content) return;
+            
+            try {
+                const response = await fetch('/api/generate-from-seed', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({content})
+                });
+                
+                if (response.ok) {
+                    const dream = await response.json();
+                    // 生成された夢を表示
+                    fullText = dream.content || dream.text || '';
+                    fullText = normalizeTo140(fullText);
+                    characters = fullText.split('');
+                    initGrid();
+                    
+                    // 読むモードに切り替え
+                    modeTabs.forEach(t => t.classList.remove('active'));
+                    document.querySelector('[data-mode="read"]').classList.add('active');
+                    readArea.classList.add('active');
+                    postArea.classList.remove('active');
+                    adjustArea.classList.remove('active');
+                    
+                    textarea.value = '';
+                } else {
+                    alert('夢の生成に失敗しました');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('API通信エラー');
+            }
+        });
+        
+        // 初期化
+        fetchDream();
+    })();
+</script>
+</body>
+</html>
