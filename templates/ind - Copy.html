@@ -2,155 +2,26 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>曇晴筆記 | 星新一風SF夢日記</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>曇晴筆記 | iPad横版</title>
     <style>
-        * { box-sizing: border-box; user-select: none; }
+        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
         body {
             background: #b8a481;
-            margin: 0;
             min-height: 100vh;
             font-family: 'Kaisei Tokumin', 'Noto Serif JP', serif;
-            padding: 12px;
-        }
-        .main-panel {
-            background: #2b231b;
-            border-radius: 28px;
-            padding: 12px 10px 18px 10px;
-            box-shadow: 0 20px 30px rgba(0,0,0,0.4);
-        }
-        .manuscript {
-            background-color: #fef7e8;
-            background-image: radial-gradient(circle at 20% 35%, rgba(180,150,110,0.08) 2%, transparent 2.5%);
-            background-size: 28px 28px;
-            border-radius: 12px;
-            padding: 12px 8px;
-            box-shadow: inset 0 0 0 1px #fff5e4, 0 6px 14px rgba(0,0,0,0.2);
-        }
-        .grid-20 {
-            display: grid;
-            grid-template-columns: repeat(20, 1fr);
-            aspect-ratio: 1 / 1;
-            width: 100%;
-            background-color: #fffcf0;
-            border: 1px solid #d6c8ac;
-            margin: 0 auto;
-        }
-        .cell {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: clamp(22px, 7.6vw, 52px);
-            font-weight: 470;
-            color: #2e241d;
-            border-right: 1px solid #c4b48a;
-            border-bottom: 1px solid #c4b48a;
-            background-color: #fffcf0;
-            transform-origin: center;
-            will-change: transform, opacity;
-            padding: 0 2px;
-        }
-        .cell:nth-child(20n) { border-right: none; }
-        .cell:nth-child(n+381) { border-bottom: none; }
-        .grid-20 {
-            display: grid;
-            grid-template-columns: repeat(20, 1fr);
-            aspect-ratio: 1 / 1;
-            width: 100%;
-            background-color: #fffcf0;
-            border: 2px solid #a89470;
-            margin: 0 auto;
-        }
-        @keyframes brushPop {
-            0% { transform: scale(2.1) rotate(-3deg); opacity: 0; text-shadow: 0 0 10px rgba(0,0,0,0.4); filter: blur(4px); }
-            45% { transform: scale(1.2) rotate(1deg); opacity: 0.95; filter: blur(0px); }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; text-shadow: none; filter: blur(0); }
-        }
-        .cell.pop { animation: brushPop 0.32s cubic-bezier(0.3, 1.2, 0.5, 1) forwards; }
-        .control-deck {
-            display: flex;
-            flex-wrap: wrap;
             justify-content: center;
             align-items: center;
-            gap: 12px;
-            background: #e2d4be;
-            padding: 10px 16px;
-            border-radius: 60px;
-            margin-bottom: 18px;
+            padding: 20px;
         }
-        .ctrl-group {
+        .app-container {
+            width: 100%;
+            max-width: 1200px;
             display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #fcf3e2;
-            padding: 4px 12px;
-            border-radius: 40px;
-        }
-        .ctrl-group label {
-            font-size: 0.7rem;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: #513e28;
-            background: #eadbc2;
-            padding: 3px 10px;
-            border-radius: 30px;
-        }
-        input[type="range"] {
-            width: 130px;
-            height: 4px;
-            -webkit-appearance: none;
-            background: #bcab8a;
-            border-radius: 10px;
-            outline: none;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #6a4f32;
-            cursor: pointer;
-            border: none;
-        }
-        .value-badge {
-            background: #2f261e;
-            color: #eedbbc;
-            font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 30px;
-            font-family: monospace;
-            font-weight: bold;
-            min-width: 44px;
-            text-align: center;
-        }
-        button {
-            background: #8f6a48;
-            border: none;
-            font-family: inherit;
-            font-weight: bold;
-            color: #fef0df;
-            padding: 6px 18px;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        button:active { transform: scale(0.96); background: #6b4d30; }
-        .progress-chip {
-            background: #cebb97;
-            padding: 4px 12px;
-            border-radius: 32px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            color: #2a211a;
-        }
-        .footnote {
-            text-align: center;
-            margin-top: 15px;
-            font-size: 0.6rem;
-            color: #dacaa8;
-            letter-spacing: 1px;
+            flex-direction: row;
+            gap: 20px;
+            align-items: flex-start;
         }
         /* 左侧模式图标栏 */
         .mode-sidebar {
@@ -163,7 +34,6 @@
             width: 120px;
             align-items: center;
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            height: fit-content;
         }
         .mode-tab {
             width: 80px;
@@ -209,6 +79,59 @@
             display: flex;
             flex-direction: column;
         }
+        /* 読むモード */
+        .manuscript-area {
+            align-items: center;
+            gap: 20px;
+        }
+        .manuscript {
+            background-color: #fef7e8;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: inset 0 0 0 1px #fff5e4, 0 6px 14px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 900px;
+        }
+        .grid-14x10 {
+            display: grid;
+            grid-template-columns: repeat(14, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 0;
+            width: 100%;
+            aspect-ratio: 14/10;
+            background-color: #fffcf0;
+            border: 2px solid #a89470;
+        }
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(18px, 3.5vw, 36px);
+            font-weight: 470;
+            color: #2e241d;
+            border-right: 1px solid #c4b48a;
+            border-bottom: 1px solid #c4b48a;
+            background-color: #fffcf0;
+            transform-origin: center;
+            will-change: transform, opacity;
+        }
+        .cell:nth-child(14n) { border-right: none; }
+        .cell:nth-child(n+131) { border-bottom: none; }
+        @keyframes brushPop {
+            0% { transform: scale(2.1) rotate(-3deg); opacity: 0; filter: blur(4px); }
+            45% { transform: scale(1.2) rotate(1deg); opacity: 0.95; filter: blur(0px); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+        }
+        .cell.pop { animation: brushPop 0.32s cubic-bezier(0.3, 1.2, 0.5, 1) forwards; }
+        .progress-chip {
+            background: #cebb97;
+            padding: 8px 16px;
+            border-radius: 32px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #2a211a;
+            text-align: center;
+        }
         /* 投稿モード */
         .post-area {
             padding: 20px;
@@ -247,30 +170,69 @@
             cursor: pointer;
         }
         /* 調節モード */
-        .adjust-area {
+        .control-area {
             padding: 20px;
             background: #e2d4be;
             border-radius: 12px;
             gap: 20px;
         }
-        .adjust-area h3 {
+        .control-area h3 {
             color: #513e28;
             margin-bottom: 16px;
         }
-        .adjust-area .ctrl-group {
+        .ctrl-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
             background: #fcf3e2;
             padding: 12px;
             border-radius: 40px;
         }
-        .adjust-area .ctrl-group label {
+        .ctrl-group label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #513e28;
             background: #eadbc2;
+            padding: 6px 14px;
+            border-radius: 30px;
+            white-space: nowrap;
         }
-        .adjust-area .control-buttons {
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #bcab8a;
+            border-radius: 10px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #6a4f32;
+            cursor: pointer;
+            border: none;
+        }
+        .value-badge {
+            background: #2f261e;
+            color: #eedbbc;
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-family: monospace;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+        .control-buttons {
             display: flex;
             gap: 12px;
             margin-top: 20px;
         }
-        .adjust-area .control-buttons button {
+        .control-buttons button {
             flex: 1;
             padding: 12px;
             background: #8f6a48;
@@ -283,14 +245,13 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .adjust-area .control-buttons button:active { transform: scale(0.96); background: #6b4d30; }
-        .app-container {
-            width: 100%;
-            max-width: 1200px;
-            display: flex;
-            flex-direction: row;
-            gap: 20px;
-            align-items: flex-start;
+        .control-buttons button:active { transform: scale(0.96); background: #6b4d30; }
+        .footnote {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.7rem;
+            color: #dacaa8;
+            letter-spacing: 1px;
         }
     </style>
 </head>
@@ -315,12 +276,9 @@
     <!-- 右侧内容区 -->
     <div class="content-area">
         <!-- 読むモード -->
-        <div class="mode-content active" id="readArea">
-            <div class="main-panel">
-                <div class="manuscript">
-                    <div class="grid-20" id="manuscriptGrid"></div>
-                </div>
-                <div class="footnote">星新一風SF夢日記 — 欲望の断片を書き留める</div>
+        <div class="mode-content manuscript-area active" id="readArea">
+            <div class="manuscript">
+                <div class="grid-14x10" id="manuscriptGrid"></div>
             </div>
         </div>
 
@@ -335,18 +293,18 @@
         </div>
 
         <!-- 調節モード -->
-        <div class="mode-content adjust-area" id="adjustArea">
+        <div class="mode-content control-area" id="adjustArea">
             <h3>表示速度調節</h3>
             <div class="ctrl-group">
                 <label>⚡速度</label>
-                <input type="range" id="speedSlider" min="20" max="180" step="5" value="200">
+                <input type="range" id="speedSlider" min="50" max="500" step="10" value="200">
                 <span id="speedVal" class="value-badge">200ms</span>
             </div>
             <div class="control-buttons">
                 <button id="replayBtn">☁️ 筆洗う・再演</button>
                 <button id="newDreamBtn">🌙 新しい夢</button>
             </div>
-            <div class="progress-chip" id="progressStat">0 / 400</div>
+            <div class="progress-chip" id="progressStat2">0 / 140</div>
         </div>
 
         <div class="footnote">星新一風SF夢日記 — 欲望の断片を書き留める</div>
@@ -357,29 +315,45 @@
     (function() {
         let fullText = '';
         let characters = [];
-        let currentDreamId = null;
+        let allDreams = [];
         
-        async function fetchDream(dreamId = null) {
+        async function loadDreamsFromJSON() {
             try {
-                let url = '/api/dream/random';
-                if (dreamId) url = `/api/dream/${dreamId}`;
-                const res = await fetch(url);
-                if (!res.ok) throw new Error('夢の取得に失敗しました');
-                const dream = await res.json();
-                fullText = dream.text || '';
-                fullText = normalizeTo400(fullText);
-                characters = fullText.split('');
-                currentDreamId = dream.id;
-                initGrid();
-            } catch (err) {
-                alert('エラー: ' + err.message);
+                const response = await fetch('dream.json');
+                const data = await response.json();
+                allDreams = data.dreams || [];
+                return allDreams;
+            } catch (error) {
+                console.error('JSON読み込みエラー:', error);
+                return [];
             }
         }
         
-        function normalizeTo400(str) {
+        async function fetchDream(dreamId = null) {
+            if (allDreams.length === 0) {
+                await loadDreamsFromJSON();
+            }
+            let dream;
+            if (dreamId) {
+                dream = allDreams.find(d => d.id == dreamId);
+            } else {
+                dream = allDreams[Math.floor(Math.random() * allDreams.length)];
+            }
+            if (!dream) {
+                alert('夢が見つかりません');
+                return;
+            }
+            fullText = dream.text || '';
+            fullText = normalizeTo140(fullText);
+            characters = fullText.split('');
+            currentDreamId = dream.id;
+            initGrid();
+        }
+        
+        function normalizeTo140(str) {
             let flat = str.replace(/\s+/g, '');
-            if (flat.length > 400) return flat.slice(0,400);
-            if (flat.length < 400) return flat + '。'.repeat(400 - flat.length);
+            if (flat.length > 140) return flat.slice(0,140);
+            if (flat.length < 140) return flat + '。'.repeat(140 - flat.length);
             return flat;
         }
         
@@ -388,13 +362,7 @@
         const speedVal = document.getElementById('speedVal');
         const replayBtn = document.getElementById('replayBtn');
         const newDreamBtn = document.getElementById('newDreamBtn');
-        const progressStat = document.getElementById('progressStat');
-        
-        // モード切り替え
-        const modeTabs = document.querySelectorAll('.mode-tab');
-        const readArea = document.getElementById('readArea');
-        const postArea = document.getElementById('postArea');
-        const adjustArea = document.getElementById('adjustArea');
+        const progressStat2 = document.getElementById('progressStat2');
         
         let cells = [];
         let revealedCount = 0;
@@ -404,7 +372,6 @@
         
         function initGrid() {
             buildEmptyGrid();
-            bindSliders();
             currentSpeed = parseInt(speedSlider.value, 10);
             speedVal.innerText = currentSpeed + 'ms';
             startAnimation();
@@ -413,7 +380,7 @@
         function buildEmptyGrid() {
             gridContainer.innerHTML = '';
             cells = [];
-            for (let i = 0; i < 400; i++) {
+            for (let i = 0; i < 140; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
                 cell.textContent = '';
@@ -423,7 +390,7 @@
         }
         
         function resetGrid() {
-            for (let i = 0; i < 400; i++) {
+            for (let i = 0; i < 140; i++) {
                 cells[i].textContent = '';
                 cells[i].classList.remove('pop');
             }
@@ -432,7 +399,7 @@
         }
         
         function revealCharacterAtIndex(index) {
-            if (index >= 400) return;
+            if (index >= 140) return;
             const cell = cells[index];
             if (cell.textContent !== '') return;
             const targetChar = characters[index];
@@ -445,23 +412,26 @@
         
         function burstReveal() {
             if (!isAnimating) return;
-            if (revealedCount >= 400) {
+            if (revealedCount >= 140) {
                 if (timer) { clearInterval(timer); timer = null; isAnimating = false; }
-                progressStat.textContent = '✨ 筆が止まる — 四百の星が瞬く ✨';
+                const text = '✨ 筆が止まる — 百四十の星が瞬く ✨';
+                progressStat2.textContent = text;
                 return;
             }
             const nextIndex = revealedCount;
-            if (nextIndex < 400) revealCharacterAtIndex(nextIndex);
+            if (nextIndex < 140) revealCharacterAtIndex(nextIndex);
             revealedCount += 1;
             updateProgressText();
-            if (revealedCount >= 400) {
+            if (revealedCount >= 140) {
                 if (timer) { clearInterval(timer); timer = null; isAnimating = false; }
-                progressStat.textContent = '✨ 筆が止まる — 四百の星が瞬く ✨';
+                const text = '✨ 筆が止まる — 百四十の星が瞬く ✨';
+                progressStat2.textContent = text;
             }
         }
         
         function updateProgressText() {
-            progressStat.textContent = `${revealedCount} / 400 字  曇→晴`;
+            const text = `${revealedCount} / 140 字  曇→晴`;
+            progressStat2.textContent = text;
         }
         
         function startAnimation() {
@@ -473,36 +443,13 @@
             timer = setInterval(burstReveal, currentSpeed);
         }
         
-        function bindSliders() {
-            speedSlider.addEventListener('input', (e) => {
-                currentSpeed = parseInt(e.target.value, 10);
-                speedVal.innerText = currentSpeed + 'ms';
-                if (isAnimating && timer) {
-                    clearInterval(timer);
-                    timer = setInterval(burstReveal, currentSpeed);
-                }
-            });
-        }
-        
-        // モード切り替えイベント
-        modeTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                modeTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                const mode = tab.dataset.mode;
-                readArea.classList.remove('active');
-                postArea.classList.remove('active');
-                adjustArea.classList.remove('active');
-                if (mode === 'read') {
-                    readArea.classList.add('active');
-                    if (timer) { clearInterval(timer); timer = null; }
-                    startAnimation();
-                } else if (mode === 'post') {
-                    postArea.classList.add('active');
-                } else if (mode === 'adjust') {
-                    adjustArea.classList.add('active');
-                }
-            });
+        speedSlider.addEventListener('input', (e) => {
+            currentSpeed = parseInt(e.target.value, 10);
+            speedVal.innerText = currentSpeed + 'ms';
+            if (isAnimating && timer) {
+                clearInterval(timer);
+                timer = setInterval(burstReveal, currentSpeed);
+            }
         });
         
         replayBtn.addEventListener('click', () => {
@@ -514,46 +461,70 @@
             fetchDream();
         });
         
-        // 種投稿フォーム
+        // モード切り替え
+        const modeTabs = document.querySelectorAll('.mode-tab');
+        const readArea = document.getElementById('readArea');
+        const postArea = document.getElementById('postArea');
+        const adjustArea = document.getElementById('adjustArea');
+        
+        modeTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                modeTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const mode = tab.dataset.mode;
+                readArea.classList.remove('active');
+                postArea.classList.remove('active');
+                adjustArea.classList.remove('active');
+                if (mode === 'read') {
+                    readArea.classList.add('active');
+                    // 読むモード選択時に自動再生開始
+                    if (timer) { clearInterval(timer); timer = null; }
+                    startAnimation();
+                } else if (mode === 'post') {
+                    postArea.classList.add('active');
+                } else if (mode === 'adjust') {
+                    adjustArea.classList.add('active');
+                }
+            });
+        });
+        
+        // 投稿フォーム（Sakura API使用）
         const seedForm = document.getElementById('seedForm');
         seedForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const textarea = seedForm.querySelector('textarea');
             const content = textarea.value.trim();
             if (!content) return;
-
+            
             try {
-                const seedRes = await fetch('/api/seed/submit', {
+                const response = await fetch('/api/generate-from-seed', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({content: content})
+                    body: JSON.stringify({content})
                 });
-                const seedData = await seedRes.json();
-                if (!seedRes.ok) throw new Error(seedData.error || '投稿失敗');
-
-                alert(`種を投稿しました！（ID: ${seedData.id}）\n夢を生成中...`);
-                textarea.value = '';
-
-                const dreamRes = await fetch(`/api/dream/random?seed_id=${seedData.id}`);
-                const dreamData = await dreamRes.json();
-                if (!dreamRes.ok) throw new Error(dreamData.error || '生成失敗');
-
-                // 生成された夢を表示
-                characters = dreamData.text.split('');
-                revealedCount = 0;
-                resetGrid();
-                startAnimation();
-
-                // 読むモードに切り替え
-                modeTabs.forEach(t => t.classList.remove('active'));
-                document.querySelector('[data-mode="read"]').classList.add('active');
-                readArea.classList.add('active');
-                postArea.classList.remove('active');
-                adjustArea.classList.remove('active');
-
-                alert('新しい夢が生成されました！');
-            } catch (err) {
-                alert('エラー: ' + err.message);
+                
+                if (response.ok) {
+                    const dream = await response.json();
+                    // 生成された夢を表示
+                    fullText = dream.content || dream.text || '';
+                    fullText = normalizeTo140(fullText);
+                    characters = fullText.split('');
+                    initGrid();
+                    
+                    // 読むモードに切り替え
+                    modeTabs.forEach(t => t.classList.remove('active'));
+                    document.querySelector('[data-mode="read"]').classList.add('active');
+                    readArea.classList.add('active');
+                    postArea.classList.remove('active');
+                    adjustArea.classList.remove('active');
+                    
+                    textarea.value = '';
+                } else {
+                    alert('夢の生成に失敗しました');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('API通信エラー');
             }
         });
         

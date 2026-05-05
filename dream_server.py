@@ -15,7 +15,10 @@ import xml.etree.ElementTree as ET
 try:
     import psycopg2
     from psycopg2.extras import DictCursor
-    DB_TYPE = "postgres"
+    if os.getenv("DATABASE_URL"):
+        DB_TYPE = "postgres"
+    else:
+        DB_TYPE = "sqlite"
 except ImportError:
     import sqlite3
     DB_TYPE = "sqlite"
