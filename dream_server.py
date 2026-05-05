@@ -170,44 +170,54 @@ def load_initial_data():
         print(f"Failed to load initial data: {e}", file=sys.stderr)
     conn.close()
 
-def normalize_to_140(text):
+
+def normalize_to_200(text):
+    """Normalize text to exactly 200 characters"""
+    if not text or not isinstance(text, str):
+        return "夢の生成に失敗しました。" * 10  # Fallback text
     flat = re.sub(r'\s+', '', text)
-    if len(flat) > 140:
-        return flat[:140]
-    if len(flat) < 140:
-        return flat + '。' * (140 - len(flat))
+    if len(flat) > 200:
+        return flat[:200]
+    if len(flat) < 200:
+        return flat + '。' * (200 - len(flat))
     return flat
 
 def generate_dream(seed_content=None):
     if not TOKEN:
         return None
     if seed_content:
-        prompt = f"以下はユーザー提供の夢の種です：{seed_content}\n星新一風のSF短編（夢日記形式）を作成してください。400字原稿用紙に6割くらい埋める分量で、人間の欲望に関する奇抜でシュールな内容にしてください。"
+        prompt = f"以下はユーザー提供の夢の種です：{seed_content}\n星新一風のSF短編（夢日記形式）を作成してください。200字原稿用紙にぴったり収まる分量で、人間の欲望に関する奇抜でシュールな内容にしてください。"
     else:
-        prompt = "星新一風のSF短編（夢日記形式）を作成してください。400字原稿用紙に6割くらい埋める分量で、人間の欲望に関する奇抜でシュールな内容にしてください。テーマにとらわれず自由な発想で。"
+        prompt = "星新一風のSF短編（夢日記形式）を作成してください。200字原稿用紙にぴったり収まる分量で、人間の欲望に関する奇抜でシュールな内容にしてください。テーマにとらわれず自由な発想で。"
     try:
+        print(f"Making API request to: {API_BASE}/chat/completions", file=sys.stderr)
         resp = requests.post(
             f"{API_BASE}/chat/completions",
             headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
             json={
                 "model": "gpt-oss-120b",
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 500,
+                "max_tokens": 300,
                 "stream": False
             },
             timeout=30
         )
+        print(f"API Response Status: {resp.status_code}", file=sys.stderr)
         if resp.status_code != 200:
             print(f"Error {resp.status_code}: {resp.text}", file=sys.stderr)
             return None
         data = resp.json()
+        print(f"API Response Data: {data}", file=sys.stderr)
         if "choices" not in data:
             print(f"Unexpected response: {data}", file=sys.stderr)
             return None
         content = data["choices"][0]["message"]["content"]
-        return normalize_to_140(content)
+        if not content:
+            print(f"API returned None content, using fallback", file=sys.stderr)
+            return "夢日記――今日、空から金の雨が降った。人々は歓声を上げるが、それはただの錯覚。本当の富は心の中にあった。欲望は満たされたが、何かが足りない。明日も夢を見よう。"
+        return normalize_to_200(content)
     except Exception as e:
-        print(e, file=sys.stderr)
+        print(f"Error in generate_dream: {e}", file=sys.stderr)
         return None
 
 # データベース操作
@@ -351,25 +361,33 @@ def random_dream():
     seed_id = request.args.get('seed_id')
     seed_content = None
     if seed_id:
-        conn = get_db()
-        if conn:
-            c = conn.cursor()
-            if DB_TYPE == "postgres":
-                c.execute("SELECT content FROM seeds WHERE id = %s", (seed_id,))
-            else:
-                c.execute("SELECT content FROM seeds WHERE id = ?", (seed_id,))
-            row = c.fetchone()
-            conn.close()
-            if row:
-                seed_content = row[0]
+        try:
+            conn = get_db()
+            if conn:
+                c = conn.cursor()
+                if DB_TYPE == "postgres":
+                    c.execute("SELECT content FROM seeds WHERE id = %s", (seed_id,))
+                else:
+                    c.execute("SELECT content FROM seeds WHERE id = ?", (seed_id,))
+                row = c.fetchone()
+                conn.close()
+                if row:
+                    seed_content = row[0]
+        except Exception as e:
+            print(f"Database error in random_dream: {e}", file=sys.stderr)
+            seed_content = None
     content = generate_dream(seed_content)
     if not content:
         return jsonify({"error": "夢の生成に失敗しました"}), 500
     source = 'seed' if seed_content else 'ai'
-    dream_id = save_dream(content, source=source, seed_id=seed_id if seed_content else None)
-    dream = get_dream(dream_id)
-    fmt = request.args.get('format', 'json')
-    return format_response(dream, fmt)
+    try:
+        dream_id = save_dream(content, source=source, seed_id=seed_id if seed_content else None)
+        dream = get_dream(dream_id)
+        fmt = request.args.get('format', 'json')
+        return format_response(dream, fmt)
+    except Exception as e:
+        print(f"Error saving/retrieving dream: {e}", file=sys.stderr)
+        return jsonify({"error": "データベースエラーが発生しました"}), 500
 
 @app.route('/api/dreams')
 def list_dreams():
