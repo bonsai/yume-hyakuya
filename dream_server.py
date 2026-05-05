@@ -170,12 +170,12 @@ def load_initial_data():
         print(f"Failed to load initial data: {e}", file=sys.stderr)
     conn.close()
 
-def normalize_to_400(text):
+def normalize_to_140(text):
     flat = re.sub(r'\s+', '', text)
-    if len(flat) > 400:
-        return flat[:400]
-    if len(flat) < 400:
-        return flat + '。' * (400 - len(flat))
+    if len(flat) > 140:
+        return flat[:140]
+    if len(flat) < 140:
+        return flat + '。' * (140 - len(flat))
     return flat
 
 def generate_dream(seed_content=None):
@@ -205,7 +205,7 @@ def generate_dream(seed_content=None):
             print(f"Unexpected response: {data}", file=sys.stderr)
             return None
         content = data["choices"][0]["message"]["content"]
-        return normalize_to_400(content)
+        return normalize_to_140(content)
     except Exception as e:
         print(e, file=sys.stderr)
         return None
