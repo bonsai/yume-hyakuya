@@ -621,13 +621,13 @@
                               cells = [];
                               
                               // Calculate optimal grid dimensions for 200 characters with 10-line breaks
-                              const viewportWidth = window.innerWidth;
-                              const maxGridWidth = Math.min(viewportWidth * 0.8, 900);
-                              const cellSize = Math.max(40, Math.min(55, maxGridWidth / gridCols));
-                              
                               // Calculate grid columns for 200 characters (20x10 grid)
                               const gridCols = 20;
                               const gridRows = 10;
+                              
+                              const viewportWidth = window.innerWidth;
+                              const maxGridWidth = Math.min(viewportWidth * 0.8, 900);
+                              const cellSize = Math.max(40, Math.min(55, maxGridWidth / gridCols));
                               
                               gridContainer.style.gridTemplateColumns = `repeat(${gridCols}, ${cellSize}px)`;
                               gridContainer.style.gridTemplateRows = `repeat(${gridRows}, ${cellSize}px)`;
