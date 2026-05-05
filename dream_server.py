@@ -266,8 +266,13 @@ def get_dream(dream_id):
     row = c.fetchone()
     conn.close()
     if row:
+        is_read_value = False
+        if DB_TYPE == "postgres":
+            is_read_value = row['is_read']
+        elif len(row) > 6: # For SQLite, check if column exists by row length
+            is_read_value = row[6]
         return {"id": row[0], "content": row[1], "created_at": row[2], "length": row[3],
-                "source": row[4], "seed_id": row[5], "is_read": row[6]}
+                "source": row[4], "seed_id": row[5], "is_read": is_read_value}
     return None
 
 def get_all_dreams(limit=20, offset=0, include_read=True):
@@ -286,7 +291,7 @@ def get_all_dreams(limit=20, offset=0, include_read=True):
     rows = c.fetchall()
     conn.close()
     return [{"id": r[0], "content": r[1], "created_at": r[2], "length": r[3],
-            "source": r[4], "seed_id": r[5], "is_read": r[6]} for r in rows]
+            "source": r[4], "seed_id": r[5], "is_read": (r['is_read'] if DB_TYPE == "postgres" else (r[6] if len(r) > 6 else False))} for r in rows]
 
 def get_unread_dreams(limit=20):
     return get_all_dreams(limit=limit, offset=0, include_read=False)
