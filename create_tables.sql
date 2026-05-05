@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS dreams (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    length INTEGER,
+    source TEXT DEFAULT 'ai',
+    seed_id INTEGER NULL
+);
+
+CREATE TABLE IF NOT EXISTS seeds (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
