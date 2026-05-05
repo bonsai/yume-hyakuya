@@ -118,8 +118,9 @@ def init_db():
         # 既存テーブルに列がなければ追加
         try:
             c.execute("ALTER TABLE dreams ADD COLUMN is_read BOOLEAN DEFAULT FALSE")
-        except:
-            pass
+            conn.commit()  # Commit immediately after ALTER TABLE
+        except Exception as e:
+            print(f"PostgreSQL ALTER TABLE skipped (column exists?): {e}", file=sys.stderr)
     else:
         c.execute('''CREATE TABLE IF NOT EXISTS dreams
                      (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,8 +136,9 @@ def init_db():
         # SQLiteにis_read列を追加（既存テーブル用）
         try:
             c.execute("ALTER TABLE dreams ADD COLUMN is_read BOOLEAN DEFAULT 0")
-        except:
-            pass
+            conn.commit()  # Commit immediately after ALTER TABLE
+        except Exception as e:
+            print(f"SQLite ALTER TABLE skipped (column exists?): {e}", file=sys.stderr)
     conn.commit()
     conn.close()
 
