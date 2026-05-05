@@ -384,6 +384,13 @@ def random_dream():
     seed_content = None
     if seed_id:
         try:
+            seed_id = int(seed_id)
+        except ValueError:
+            print(f"Invalid seed_id received: {seed_id}", file=sys.stderr)
+            seed_id = None # Treat as if no seed_id was provided
+
+    if seed_id is not None:
+        try:
             conn = get_db()
             if conn:
                 c = conn.cursor()
