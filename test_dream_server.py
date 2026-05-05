@@ -35,7 +35,7 @@ def db_client(tmp_db_path):
 
 def test_index_page(db_client):
     """index.html が表示されるか"""
-    resp = client.get('/')
+    resp = db_client.get('/')
     assert resp.status_code == 200
     assert 'SF夢日記' in resp.data.decode('utf-8')
 
