@@ -180,7 +180,7 @@ def load_initial_data():
 def normalize_to_200(text):
     """Normalize text to exactly 200 characters"""
     if not text or not isinstance(text, str):
-        return "夢の生成に失敗。再試行してください。" * 10  # Fallback text
+        return "夢の生成に失敗。再試行。" * 10  # Fallback text (20 chars * 10 = 200)
     flat = re.sub(r'\s+', '', text)
     if len(flat) > 200:
         return flat[:200]
