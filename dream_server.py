@@ -8,6 +8,8 @@ import json
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
+from email.utils import formatdate
+from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS
@@ -346,7 +348,17 @@ def format_response(data, format_type):
             item_elem = ET.SubElement(channel, "item")
             ET.SubElement(item_elem, "title").text = f"夢 #{item['id']}"
             ET.SubElement(item_elem, "description").text = item['content']
-            ET.SubElement(item_elem, "pubDate").text = item['created_at']
+            
+            created_at_str = str(item['created_at'])
+            pub_date = created_at_str # Default fallback
+
+            try:
+                dt_obj = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
+                pub_date = formatdate(timeval=dt_obj.timestamp(), localtime=False, usegmt=True)
+            except ValueError:
+                pass
+            
+            ET.SubElement(item_elem, "pubDate").text = pub_date
             ET.SubElement(item_elem, "guid").text = f"{request.url_root}api/dream/{item['id']}"
         return Response(ET.tostring(rss, encoding="unicode"), mimetype="application/rss+xml; charset=utf-8")
     elif format_type == "txt":
