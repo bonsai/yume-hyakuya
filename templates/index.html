@@ -615,8 +615,8 @@
                               },
                         ];
 
-                        // 順番再生用インデックス（ハードコードモード時）
-                        let hardcodedIndex = 0;
+                        // 直前に表示した夢IDを記録（連続重複防止）
+                        let lastHardcodedId = -1;
 
                         let fullText = "";
                         let characters = [];
@@ -628,15 +628,16 @@
                         // =========================================================
                         async function fetchDream(dreamId = null) {
                               if (USE_HARDCODED) {
-                                    // 指定 ID があればそれを、なければ順番に進める
+                                    // 指定 ID があればそれを、なければランダム（直前と重複しない）
                                     let dream;
                                     if (dreamId !== null) {
                                           dream = HARDCODED_DREAMS.find(d => d.id === dreamId)
                                                 || HARDCODED_DREAMS[0];
-                                          hardcodedIndex = HARDCODED_DREAMS.indexOf(dream);
                                     } else {
-                                          dream = HARDCODED_DREAMS[hardcodedIndex % HARDCODED_DREAMS.length];
+                                          const pool = HARDCODED_DREAMS.filter(d => d.id !== lastHardcodedId);
+                                          dream = pool[Math.floor(Math.random() * pool.length)];
                                     }
+                                    lastHardcodedId = dream.id;
                                     fullText = normalizeText(dream.content);
                                     characters = fullText.split("");
                                     currentDreamId = dream.id;
@@ -663,10 +664,7 @@
 
                         // アニメーション完了後に次の夢へ自動遷移（ハードコードモード用）
                         function fetchNextDream() {
-                              if (USE_HARDCODED) {
-                                    hardcodedIndex = (hardcodedIndex + 1) % HARDCODED_DREAMS.length;
-                              }
-                              fetchDream();
+                              fetchDream(); // ランダム選択は fetchDream 内で行う
                         }
 
                         function normalizeText(str) {
@@ -889,7 +887,7 @@
 
                         function updateProgressText() {
                               const dreamLabel = USE_HARDCODED
-                                    ? `第${(hardcodedIndex % HARDCODED_DREAMS.length) + 1}話`
+                                    ? `夢#${lastHardcodedId}`
                                     : "";
 
                               if (last5Dreams.length > 0) {
