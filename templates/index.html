@@ -778,6 +778,11 @@
                                 clearInterval(timer);
                                 timer = null;
                             }
+                            // 5 話連続再生中は自動再生フラグを一時的に OFF（重複防止）
+                            const wasAutoPlaying = isAutoPlaying;
+                            if (wasAutoPlaying) {
+                                stopAutoPlay();
+                            }
                             // まず現在のグリッドをリセットしてから
                             resetGrid();
                             revealedCount = 0;
@@ -786,7 +791,7 @@
                             // 1 件目のテキストで grid を構築
                             fullText = last5Dreams[last5Index];
                             characters = fullText.split("");
-                            buildEmptyGrid();          // 文字数が変わってもセルは同じなので再構築は不要だが、表示領域が変わる可能性に備えて
+                            buildEmptyGrid();          // 文字数が変わるので必ず再構築
                             // アニメーション開始（既存の burstReveal が文字単位なので流用）
                             burstReveal();
                             timer = setInterval(burstReveal, currentSpeed);
@@ -814,8 +819,11 @@
                                     fullText = last5Dreams[last5Index];
                                     characters = fullText.split("");
                                     revealedCount = 0;
+                                    // グリッドを再構築（文字数が変わるため）
+                                    buildEmptyGrid();
                                     isAnimating = true;
                                     setTimeout(() => {
+                                          burstReveal();
                                           timer = setInterval(burstReveal, currentSpeed);
                                     }, 500);   // 0.5 秒ブランク
                                     return;
