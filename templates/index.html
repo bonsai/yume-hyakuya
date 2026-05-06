@@ -50,7 +50,10 @@
                         border-bottom: 1px solid #c4b48a;
                         background: #fffcf0;
                         box-sizing: border-box;
-                        font-size: var(--cell-font-size);
+                        /* ベースサイズは JavaScript から --base-font-size で上書き */
+                        font-size: var(--base-font-size, 24px);
+                        /* ランダムに不透明度を変える（JS が上書き） */
+                        opacity: var(--cell-opacity, 1);
                   }
 
                   /* ---- border‑clean‑up for dynamic columns/rows ---- */
@@ -502,11 +505,40 @@
                                           value="200"
                                     />
                                     <span id="speedVal" class="value-badge"
-                                          >200ms</span
-                                    >
-                              </div>
-                              <div class="control-buttons">
-                                    <button id="replayBtn">
+                                                >200ms</span
+                                          >
+                                    </div>
+                                    <!-- 文字サイズ（ベース） -->
+                                    <div class="ctrl-group">
+                                         <label>🔤文字サイズ</label>
+                                         <input
+                                               type="range"
+                                               id="fontSizeSlider"
+                                               min="12"
+                                               max="48"
+                                               step="1"
+                                               value="24"
+                                         />
+                                         <span id="fontSizeVal" class="value-badge"
+                                               >24px</span
+                                         >
+                                    </div>
+                                    <!-- 文字濃さ（不透明度）のランダム幅 -->
+                                    <div class="ctrl-group">
+                                         <label>🌓濃さ‑揺らぎ</label>
+                                         <input
+                                               type="range"
+                                               id="opacitySlider"
+                                               min="0"
+                                               max="40"
+                                               step="2"
+                                               value="10"
+                                         />
+                                         <span id="opacityVal" class="value-badge"
+                                               >10%</span
+                                         >
+                                    </div>
+                                    <div class="control-buttons">                                    <button id="replayBtn">
                                           ☁️ 筆洗う・再演
                                     </button>
                                     <button id="newDreamBtn">
@@ -584,6 +616,10 @@
                         const speedSlider =
                               document.getElementById("speedSlider");
                         const speedVal = document.getElementById("speedVal");
+                        const fontSizeSlider = document.getElementById("fontSizeSlider");
+                        const fontSizeVal = document.getElementById("fontSizeVal");
+                        const opacitySlider = document.getElementById("opacitySlider");
+                        const opacityVal = document.getElementById("opacityVal");
                         const replayBtn = document.getElementById("replayBtn");
                         const newDreamBtn =
                               document.getElementById("newDreamBtn");
@@ -616,6 +652,9 @@
                               bindSliders();
                               currentSpeed = parseInt(speedSlider.value, 10);
                               speedVal.innerText = currentSpeed + "ms";
+                              // 初期フォントサイズ・濃さを UI に反映
+                              fontSizeVal.innerText = fontSizeSlider.value + "px";
+                              opacityVal.innerText = opacitySlider.value + "%";
                               startAnimation();
                         }
 
@@ -643,15 +682,31 @@
                               gridContainer.style.width = 'fit-content';
                               gridContainer.style.margin = '0 auto';
                               
-                              // Create exactly TOTAL cells (200)
+                              // Create exactly TOTAL cells (200).  Each cell receives
+                              //   1️⃣ ベースフォントサイズ（スライダーで決定）  
+                              //   2️⃣ ランダムなフォントサイズ ±10%（視覚的に揺らぎ）  
+                              //   3️⃣ ランダムな不透明度（濃さ揺らぎ）  
+                              //   4️⃣ 文字サイズはセルサイズに対して 0.68 倍 を基準にし、スライダー分だけ上書き
                               for (let i = 0; i < TOTAL; i++) {
                                     const cell = document.createElement("div");
                                     cell.className = "cell";
                                     cell.textContent = "";
                                     cell.style.width = `${cellSize}px`;
                                     cell.style.height = `${cellSize}px`;
-                                    cell.style.fontSize = `${Math.floor(cellSize * 0.68)}px`; // Font size proportional to cell size
-                                    
+
+                                    // ---- 基本フォントサイズ（スライダー値） ----
+                                    const baseFont = parseInt(fontSizeSlider.value, 10);
+                                    // ±10% の揺らぎを付加（オプションで調節したいならベースフォントに乗算すれば OK）
+                                    const jitter = (Math.random() * 0.2 - 0.1) * baseFont; // -10% ～ +10%
+                                    const finalFont = Math.max(12, Math.floor(baseFont + jitter));
+                                    cell.style.fontSize = `${finalFont}px`;
+
+                                    // ---- 文字濃さ（不透明度） ----
+                                    // opacitySlider は「揺らぎ幅（%）」を表すので、0〜40% のランダム変化を付与
+                                    const opacityJitter = opacitySlider.value / 100; // 0.0‑0.4
+                                    const randOpacity = 1 - (Math.random() * opacityJitter);
+                                    cell.style.opacity = randOpacity.toFixed(2);
+
                                     gridContainer.appendChild(cell);
                                     cells.push(cell);
                               }
@@ -753,6 +808,21 @@
                                           );
                                     }
                               });
+                               // 文字サイズスライダー
+                               fontSizeSlider.addEventListener("input", (e) => {
+                                     const v = e.target.value;
+                                     fontSizeVal.innerText = v + "px";
+                                     // 変更は次回 grid ビルド時に反映させる
+                                     if (!isAnimating) buildEmptyGrid();
+                               });
+
+                               // 濃さ揺らぎスライダー
+                               opacitySlider.addEventListener("input", (e) => {
+                                     const v = e.target.value;
+                                     opacityVal.innerText = v + "%";
+                                     // 変更は次回 grid ビルド時に反映させる
+                                     if (!isAnimating) buildEmptyGrid();
+                               });
                               
                               autoPlayDelay.addEventListener("input", (e) => {
                                     autoPlayDelaySeconds = parseInt(e.target.value, 10);
@@ -777,6 +847,9 @@
                                                 clearInterval(timer);
                                                 timer = null;
                                           }
+                                          // 読みモードに入ったら最新のスライダー設定で再構築
+                                          // 読みモードに入ったら最新のスライダー設定で再構築
+                                          buildEmptyGrid();
                                           startAnimation();
                                     } else if (mode === "post") {
                                           postArea.classList.add("active");
