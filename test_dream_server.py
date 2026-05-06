@@ -2,6 +2,7 @@ import pytest
 import sys
 import os
 import json
+from unittest.mock import patch, MagicMock
 from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -24,7 +25,7 @@ def db_client(tmp_db_path):
 
     # Re-initialize DB with temp path
     with app.app_context():
-        init_db(tmp_db_path)
+        init_db() # Should now use app.config['DB_PATH']
 
     with app.test_client() as client:
         yield client
@@ -51,10 +52,25 @@ def test_api_dreams(db_client, tmp_db_path):
 
 def test_api_dream_random(db_client):
     """ランダム夢生成（モックが必要）"""
-    # Sakura APIのモックが必要ですが、ここでは簡易的に
-    resp = db_client.get('/api/dream/random')
-    # Sakura APIが失敗する可能性があるので200か500
-    assert resp.status_code in [200, 500]
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "choices": [
+            {
+                "message": {
+                    "content": "テスト夢です。" * 30
+                }
+            }
+        ]
+    }
+
+    with patch('requests.post', return_value=mock_response), \
+         patch('dream_server.TOKEN', 'test_token'):
+        resp = db_client.get('/api/dream/random')
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert 'content' in data
+        assert len(data['content']) == 200
 
 def test_api_seed_submit(db_client):
     """種投稿API"""
