@@ -551,8 +551,15 @@
                                     <button id="autoPlayBtn">
                                           ▶️ 自動再生
                                     </button>
-                              </div>
-                              <div class="ctrl-group">
+                                    </div>
+                                    <!-- 5 話連続再生ボタン -->
+                                    <div class="ctrl-group" style="margin-top:8px;">
+                                    <button id="playLast5Btn">📚 直近5話を連続再生</button>
+                                    </div>
+                                    <!-- 種投稿への誘い -->
+                                    <div class="progress-chip" id="seedInvite" style="margin-top:6px; cursor:pointer;">
+                                    🌱 君も夢の種を撒かないか？
+                                    </div>                              <div class="ctrl-group">
                                     <label>⏱️ 再生間隔</label>
                                     <input
                                           type="range"
@@ -646,14 +653,18 @@
                         let autoPlayDelaySeconds = 8;
                         let lastRevealedIndex = 0;
 
+                        // ---- 5 話連続再生用変数 ----
+                        let last5Dreams = [];   // 取得した 5 件の文字列配列
+                        let last5Index   = 0;   // 現在再生中の話番号 (0‑4)
+
                         function initGrid() {
-                              buildEmptyGrid();
-                              bindSliders();
+                              // UI のスライダー状態を最新に反映
                               currentSpeed = parseInt(speedSlider.value, 10);
                               speedVal.innerText = currentSpeed + "ms";
-                              // 初期フォントサイズ・濃さを UI に反映
                               fontSizeVal.innerText = fontSizeSlider.value + "px";
                               opacityVal.innerText = opacitySlider.value + "%";
+                              bindSliders();
+                              buildEmptyGrid();
                               startAnimation();
                         }
 
@@ -736,36 +747,99 @@
                                     cell.classList.remove("pop");
                               }, 350);
                         }
+
+                        // 5 話取得関数
+                        async function loadLast5Dreams() {
+                            try {
+                                const res = await fetch("/api/dream/last5");
+                                if (!res.ok) throw new Error("取得失敗");
+                                const data = await res.json();       // 配列が返ってくる
+                                // 文字列だけ抽出して配列化
+                                last5Dreams = data.map(d => d.content);
+                                return true;
+                            } catch (e) {
+                                console.error("loadLast5Dreams error:", e);
+                                return false;
+                            }
+                        }
+
+                        // 5 話再生開始
+                        async function startLast5Playback() {
+                            // まだ取得していなければロード
+                            if (last5Dreams.length === 0) {
+                                const ok = await loadLast5Dreams();
+                                if (!ok) {
+                                    alert("直近 5 件の取得に失敗しました");
+                                    return;
+                                }
+                            }
+                            // 既存のタイマーは止す
+                            if (timer) {
+                                clearInterval(timer);
+                                timer = null;
+                            }
+                            // まず現在のグリッドをリセットしてから
+                            resetGrid();
+                            revealedCount = 0;
+                            last5Index = 0;
+                            isAnimating = true;
+                            // 1 件目のテキストで grid を構築
+                            fullText = last5Dreams[last5Index];
+                            characters = fullText.split("");
+                            buildEmptyGrid();          // 文字数が変わってもセルは同じなので再構築は不要だが、表示領域が変わる可能性に備えて
+                            // アニメーション開始（既存の burstReveal が文字単位なので流用）
+                            burstReveal();
+                            timer = setInterval(burstReveal, currentSpeed);
+                        }
+
                         function burstReveal() {
                               if (!isAnimating) return;
-
-                              // すべての文字が表示されたら完了
-                              if (revealedCount >= characters.length) {
-                                    if (timer) {
-                                          clearInterval(timer);
-                                          timer = null;
-                                          isAnimating = false;
-                                    }
-                                    progressStat.textContent = "✨ 筆が止まる — 物語が完成 ✨";
-                                    
-                                    // Auto-play next dream if enabled
-                                    if (isAutoPlaying) {
-                                          setTimeout(() => {
-                                                fetchDream();
-                                          }, autoPlayDelaySeconds * 1000);
-                                    }
+                              // 通常文字表示（1 話または 5 話連続中の現在話）
+                              if (revealedCount < characters.length) {
+                                    revealCharacterAtIndex(revealedCount);
+                                    revealedCount += 1;
+                                    updateProgressText();
                                     return;
                               }
 
-                              const nextIndex = revealedCount;
-                              if (nextIndex < characters.length) // Only reveal if there's a character
-                                    revealCharacterAtIndex(nextIndex);
-                              revealedCount += 1;
-                              updateProgressText();
+                              // 今の話が全部表示し終わった
+                              clearInterval(timer);
+                              timer = null;
+                              isAnimating = false;
+
+                              // 5 話モードかどうか判定
+                              if (last5Dreams.length > 0 && last5Index < last5Dreams.length - 1) {
+                                    // 次の話へ自動遷移
+                                    last5Index += 1;
+                                    fullText = last5Dreams[last5Index];
+                                    characters = fullText.split("");
+                                    revealedCount = 0;
+                                    isAnimating = true;
+                                    setTimeout(() => {
+                                          timer = setInterval(burstReveal, currentSpeed);
+                                    }, 500);   // 0.5 秒ブランク
+                                    return;
+                              }
+
+                              // 完了メッセージ
+                              progressStat.textContent = last5Dreams.length > 0 ?
+                                    "✨ 5 話すべて完了 ✨" : "✨ 筆が止まる — 物語が完成 ✨";
+
+                              // Auto‑play がオンの場合は次のランダム夢へ
+                              if (isAutoPlaying) {
+                                    setTimeout(() => fetchDream(), autoPlayDelaySeconds * 1000);
+                              }
                         }
 
                         function updateProgressText() {
-                              progressStat.textContent = `${revealedCount} / ${characters.length} 字  曇→晴`;
+                              if (last5Dreams.length > 0) {
+                                    const currentStory = last5Index + 1;
+                                    const shown = Math.min(revealedCount, characters.length);
+                                    progressStat.textContent = `第${currentStory}話 ${shown}/${characters.length}字`;
+                                    return;
+                              }
+                              const shown = Math.min(revealedCount, characters.length);
+                              progressStat.textContent = `${shown} / ${characters.length} 字  曇→晴`;
                         }
 
                         function startAnimation() {
@@ -773,6 +847,9 @@
                                     clearInterval(timer);
                                     timer = null;
                               }
+                              // 1 話モードの初期化
+                              last5Dreams = [];   // 通常モードは空にしておく
+                              last5Index   = 0;
                               resetGrid();
                               revealedCount = 0;
                               isAnimating = true;
@@ -812,6 +889,20 @@
                               autoPlayDelay.addEventListener("input", (e) => {
                                     autoPlayDelaySeconds = parseInt(e.target.value, 10);
                                     delayVal.innerText = autoPlayDelaySeconds + "秒";
+                              });
+
+                              // 5 話連続再生ボタン
+                              playLast5Btn.addEventListener("click", async () => {
+                                    // 5 話連続再生は「自動再生」フラグとは独立して実行
+                                    stopAutoPlay(); // Stop any ongoing auto-play
+                                    await startLast5Playback();
+                              });
+
+                              // 「種を撒く」誘いクリック
+                              seedInvite.addEventListener("click", () => {
+                                    // mode タブの「投稿」へ切り替え
+                                    const postTab = document.querySelector('.mode-tab[data-mode="post"]');
+                                    if (postTab) postTab.click();   // クリックイベントを発火させるだけでモード切替ロジックが走ります
                               });
                         }
 
