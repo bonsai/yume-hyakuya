@@ -39,49 +39,47 @@
                               inset 0 0 0 1px #fff5e4,
                               0 6px 14px rgba(0, 0, 0, 0.2);
                   }
-                  .grid-14x10 {
-                        display: grid;
-                        grid-template-columns: repeat(14, 1fr);
-                        grid-template-rows: repeat(10, 1fr);
-                        width: 100%;
-                        background-color: #fffcf0;
-                        border: 1px solid #d6c8ac;
-                        margin: 0 auto;
-                  }
+
                   .cell {
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        font-size: clamp(32px, 9vw, 65px);
                         font-weight: 470;
                         color: #2e241d;
                         border-right: 1px solid #c4b48a;
                         border-bottom: 1px solid #c4b48a;
-                        background-color: #fffcf0;
-                        transform-origin: center;
-                        will-change: transform, opacity;
-                        padding: 0 2px;
-                        min-width: 55px;
-                        min-height: 55px;
-                        line-height: 1;
+                        background: #fffcf0;
+                        box-sizing: border-box;
+                        font-size: var(--cell-font-size);
                   }
 
-                  .cell:nth-child(n + 181) {
-                        border-bottom: none;
+                  /* ---- border‑clean‑up for dynamic columns/rows ---- */
+                  .cell:nth-child(var(--grid-cols) * n) {
+                        border-right: none;           /* end of each row */
                   }
+                  .cell:nth-last-child(-n + var(--grid-cols)) {
+                        border-bottom: none;         /* bottom of final row */
+                  }
+                  .cell:nth-child(var(--grid-cols) * var(--grid-rows)) {
+                        border-right: none;
+                        border-bottom: none;         /* the very last cell */
+                  }
+
+                  /* -------------------------------------------------
+                     The grid is now dynamic – borders are handled
+                     with CSS variables (see below).  No hard‑coded
+                     nth‑child selectors.
+                  ------------------------------------------------- */
                   .grid-dynamic {
                         display: grid;
-                        width: 100%;
-                        background-color: #fffcf0;
-                        border-top: 2px solid #a89470;
-                        border-left: 2px solid #a89470;
-                        border-right: 2px solid #a89470;
-                        border-bottom: 2px solid #a89470;
+                        width: fit-content;
                         margin: 0 auto;
                         gap: 0;
-                        padding: 8px;
+                        background: #fffcf0;
+                        border: 2px solid #a89470;   /* outer frame */
+                        padding: 0;
                         overflow: hidden;
-                        max-height: 55vh;
+                        max-height: unset; /* Remove max-height constraint */
                   }
                   @keyframes brushPop {
                         0% {
@@ -636,6 +634,9 @@
                               const gridRows = Math.ceil(TOTAL / dynamicCols); // Use TOTAL and dynamicCols for rows
 
                               const cellSize = maxGridWidth / dynamicCols; // Recalculate cellSize to perfectly fit
+
+                              document.documentElement.style.setProperty('--grid-cols', dynamicCols);
+                              document.documentElement.style.setProperty('--grid-rows', gridRows);
 
                               gridContainer.style.gridTemplateColumns = `repeat(${dynamicCols}, ${cellSize}px)`;
                               gridContainer.style.gridTemplateRows = `repeat(${gridRows}, ${cellSize}px)`;
