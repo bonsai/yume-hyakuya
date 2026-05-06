@@ -1,0 +1,50 @@
+name: Devin Review
+
+# PR ごとに Devin Review への導線を Actions サマリーに出す。
+# 公式の「Auto-Review」（結果を PR checks / コメントに載せる）は Devin 側
+# https://app.devin.ai/settings/review でリポジトリ登録すると PR イベントで走る。
+# `npx devin-review` は localhost 認証と端末前提のため、GitHub-hosted runner では安定動作しません。
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+      - 'feature/**'
+      - 'fix/**'
+      - 'docs/**'
+      - 'ci/**'
+
+permissions:
+  contents: read
+
+jobs:
+  devin-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Devin Review link & setup notes
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          REVIEW_URL="${PR_URL/github.com/devinreview.com}"
+          {
+            echo "## Devin Review"
+            echo ""
+            echo "**[Open in Devin Review](${REVIEW_URL})** — same PR; URL shortcut per [Devin docs](https://docs.devin.ai/work-with-devin/devin-review)."
+            echo ""
+            echo "### Automated review on every PR"
+            echo "In [Devin → Settings → Review](https://app.devin.ai/settings/review), add this repository (or self-enroll) so **Auto-Review** runs on open / push / ready-for-review. Results can appear as PR checks and comments."
+            echo ""
+            echo "### Local CLI (developer machine)"
+            echo "From a clone of this repo:"
+            echo ""
+            echo '```bash'
+            echo "npx devin-review \"${PR_URL}\""
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
