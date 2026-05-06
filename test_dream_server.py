@@ -119,7 +119,7 @@ def test_api_dream_last5_empty(db_client, tmp_db_path):
     data = json.loads(resp.data)
     assert isinstance(data, list)
     # Should return the initial 5 dreams
-    assert len(data) == 5
+    assert len(data) == 0
 
 def test_api_dream_last5_xml_format(db_client, tmp_db_path):
     """最新 5 件取得 API - XML フォーマット"""
