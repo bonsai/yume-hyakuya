@@ -65,9 +65,7 @@
                         min-height: 55px;
                         line-height: 1;
                   }
-                  .cell:nth-child(20n) {
-                        border-right: none;
-                  }
+
                   .cell:nth-child(n + 181) {
                         border-bottom: none;
                   }
@@ -75,7 +73,10 @@
                         display: grid;
                         width: 100%;
                         background-color: #fffcf0;
-                        border: 2px solid #a89470;
+                        border-top: 2px solid #a89470;
+                        border-left: 2px solid #a89470;
+                        border-right: 2px solid #a89470;
+                        border-bottom: 2px solid #a89470;
                         margin: 0 auto;
                         gap: 0;
                         padding: 8px;
@@ -543,6 +544,7 @@
 
             <script>
                   (function () {
+                        const TOTAL = 200;
                         let fullText = "";
                         let characters = [];
                         let currentDreamId = null;
@@ -623,29 +625,31 @@
                               gridContainer.innerHTML = "";
                               cells = [];
                               
-                              // Calculate optimal grid dimensions for 200 characters with 10-line breaks
-                              // Calculate grid columns for 200 characters (20x10 grid)
-                              const gridCols = 20;
-                              const gridRows = 10;
-                              
                               const viewportWidth = window.innerWidth;
                               const maxGridWidth = Math.min(viewportWidth * 0.8, 900);
-                              const cellSize = Math.max(48, Math.min(66, (maxGridWidth / gridCols) * 1.2));
-                              
-                              gridContainer.style.gridTemplateColumns = `repeat(${gridCols}, ${cellSize}px)`;
+
+                              // Calculate dynamic gridCols (15-25 columns)
+                              const idealCellSize = 60; // Target ideal cell size
+                              let dynamicCols = Math.floor(maxGridWidth / idealCellSize);
+                              dynamicCols = Math.max(15, Math.min(25, dynamicCols));
+
+                              const gridRows = Math.ceil(TOTAL / dynamicCols); // Use TOTAL and dynamicCols for rows
+
+                              const cellSize = maxGridWidth / dynamicCols; // Recalculate cellSize to perfectly fit
+
+                              gridContainer.style.gridTemplateColumns = `repeat(${dynamicCols}, ${cellSize}px)`;
                               gridContainer.style.gridTemplateRows = `repeat(${gridRows}, ${cellSize}px)`;
                               gridContainer.style.width = 'fit-content';
                               gridContainer.style.margin = '0 auto';
                               
-                              // Create exactly 200 cells
-                              for (let i = 0; i < 200; i++) {
+                              // Create exactly TOTAL cells (200)
+                              for (let i = 0; i < TOTAL; i++) {
                                     const cell = document.createElement("div");
                                     cell.className = "cell";
                                     cell.textContent = "";
                                     cell.style.width = `${cellSize}px`;
                                     cell.style.height = `${cellSize}px`;
-                                    
-
+                                    cell.style.fontSize = `${Math.floor(cellSize * 0.68)}px`; // Font size proportional to cell size
                                     
                                     gridContainer.appendChild(cell);
                                     cells.push(cell);
