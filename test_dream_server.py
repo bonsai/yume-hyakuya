@@ -27,7 +27,8 @@ def db_client(tmp_db_path):
         init_db(tmp_db_path)
 
     with app.test_client() as client:
-        yield client
+        with app.app_context():
+            yield client
 
     # Clean up after test
     if os.path.exists(tmp_db_path):
@@ -55,6 +56,31 @@ def test_api_dream_random(db_client):
     resp = db_client.get('/api/dream/random')
     # Sakura APIが失敗する可能性があるので200か500
     assert resp.status_code in [200, 500]
+    if resp.status_code == 200:
+        data = json.loads(resp.data)
+        assert 'content' in data
+        assert len(data['content']) == 200
+
+def test_normalize_to_200():
+    from dream_server import normalize_to_200
+    # Normal case
+    text = "こんにちは"
+    normalized = normalize_to_200(text)
+    assert len(normalized) == 200
+    assert normalized.startswith("こんにちは")
+
+    # Too long
+    text = "あ" * 300
+    normalized = normalize_to_200(text)
+    assert len(normalized) == 200
+
+    # None input
+    normalized = normalize_to_200(None)
+    assert len(normalized) == 200
+
+    # Non-string input
+    normalized = normalize_to_200(123)
+    assert len(normalized) == 200
 
 def test_api_seed_submit(db_client):
     """種投稿API"""
