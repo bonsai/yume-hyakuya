@@ -37,18 +37,18 @@
 
 ## TODO
 
-### 🔴 API 500エラー調査
-- **症状**: `expected string or bytes-like object`
-- **影響**: ランダム夢生成が機能しない
-- **関連ファイル**: `app.py`, `dream_service.py`, `dream_diary.py`
-
 ### 🟡 Docker フォールバック
 - **症状**: Docker デーモン未起動時にビルド失敗
 
-###  favicon 未設定
-- **症状**: `/favicon.ico` で 404
-
 ## DONE
+
+### ✅ API 500エラー & 集中エラーハンドリング実装 (2024-05-16)
+- 修正: `normalize_to_200` で非文字列入力を許容
+- 追加: Flask errorhandler による JSON エラーレスポンスの統一
+- 改善: `get_db` が `app.config['DB_PATH']` を参照するように修正し、テストの隔離性を向上
+
+### ✅ favicon 設定 (2024-05-16)
+- 修正: `static/favicon.ico` を配置し、404 エラーを解消
 
 ### ✅ agents.how.debug.md 作成: デバッグ手法と環境を分離 (2026-05-05 13:10)
 - デバッグ手法と開発環境を `agents.how.debug.md` に移動

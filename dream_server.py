@@ -12,7 +12,7 @@ from typing import List, Dict, Any
 from email.utils import formatdate
 from datetime import datetime
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify, Response
+from flask import Flask, render_template, request, jsonify, Response, current_app
 from flask_cors import CORS
 import xml.etree.ElementTree as ET
 import threading
@@ -94,6 +94,11 @@ def get_db(db_path=None): # Add optional db_path argument
             print(f"DB connection failed: {e}", file=sys.stderr)
             return None
     else:
+        if not db_path:
+            try:
+                db_path = current_app.config.get('DB_PATH')
+            except RuntimeError:
+                db_path = None
         sqlite_db_path = db_path if db_path else DB_PATH # Use provided path or fallback
         conn = sqlite3.connect(sqlite_db_path)
         conn.row_factory = sqlite3.Row  # Enable column name access
@@ -182,9 +187,10 @@ def load_initial_data():
 
 def normalize_to_200(text):
     """Normalize text to exactly 200 characters"""
-    if not text or not isinstance(text, str):
+    if not text:
         return "夢の生成に失敗。再試行。" * 10  # Fallback text (20 chars * 10 = 200)
-    flat = re.sub(r'\s+', '', text)
+    text_str = str(text)
+    flat = re.sub(r'\s+', '', text_str)
     if len(flat) > 200:
         return flat[:200]
     if len(flat) < 200:
@@ -215,6 +221,7 @@ def generate_dream(seed_content=None):
         if resp.status_code != 200:
             print(f"Error {resp.status_code}: {resp.text}", file=sys.stderr)
             return None
+        print(f"API Response Body: {resp.text}", file=sys.stderr)
         data = resp.json()
         print(f"API Response Data: {data}", file=sys.stderr)
         if "choices" not in data:
@@ -330,6 +337,22 @@ def get_all_seeds():
 
 # ---- Flaskアプリ ----
 app = Flask(__name__)
+
+# エラーハンドラー
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({"error": "Resource not found", "status": 404}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal server error", "status": 500}), 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Log the exception
+    print(f"Unhandled exception: {e}", file=sys.stderr)
+    return jsonify({"error": str(e), "status": 500}), 500
+
 init_db()
 
 def serialize_dream_data(dream_data):
