@@ -1,0 +1,82 @@
+name: 🧪 pytest CI
+
+# -------------------------------------------------
+# When to run the workflow
+# -------------------------------------------------
+on:
+  push:
+    branches: [ main, master, develop ]   # adjust to your branch names
+  pull_request:
+    branches: [ main, master, develop ]
+
+# -------------------------------------------------
+# Jobs
+# -------------------------------------------------
+jobs:
+  test:
+    runs-on: ubuntu-latest                     # Ubuntu VM (Linux)
+
+    # -------------------------------------------------
+    # Matrix – test on several Python versions (optional)
+    # -------------------------------------------------
+    strategy:
+      matrix:
+        python-version: [ "3.10", "3.11", "3.12" ]   # add/remove versions as you like
+
+    steps:
+      # -------------------------------------------------
+      # 1️⃣ Checkout the repository
+      # -------------------------------------------------
+      - name: 📂 Checkout code
+        uses: actions/checkout@v4
+
+      # -------------------------------------------------
+      # 2️⃣ Set up the requested Python version
+      # -------------------------------------------------
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # -------------------------------------------------
+      # 3️⃣ Cache pip packages (speeds up subsequent runs)
+      # -------------------------------------------------
+      - name: 📦 Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # -------------------------------------------------
+      # 4️⃣ Install project dependencies
+      # -------------------------------------------------
+      - name: 📥 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # If you have extra test‑only deps, install them here:
+          # pip install -r requirements-test.txt
+
+      # -------------------------------------------------
+      # 5️⃣ Run the pytest test suite
+      # -------------------------------------------------
+      - name: 🧪 Run pytest
+        # The `--color=yes` forces colour output (nice in the Actions UI)
+        # The `--junitxml=reports/pytest.xml` creates a JUnit report
+        # that can be uploaded as an artifact or used by other tools.
+        run: |
+          mkdir -p reports
+          pytest --color=yes --junitxml=reports/pytest.xml
+
+      # -------------------------------------------------
+      # 6️⃣ (Optional) Upload the test report as an artifact
+      # -------------------------------------------------
+      - name: 📤 Upload pytest report
+        if: always()                               # always upload, even on failure
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report-${{ matrix.python-version }}
+          path: reports/pytest.xml
+          retention-days: 7
