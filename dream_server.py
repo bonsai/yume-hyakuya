@@ -226,10 +226,11 @@ def generate_dream(seed_content=None):
             return None
         data = resp.json()
         print(f"API Response Data: {data}", file=sys.stderr)
-        if not data.get("choices"):
-            print(f"Unexpected response: {data}", file=sys.stderr)
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError):
+            print(f"Unexpected response structure: {data}", file=sys.stderr)
             return None
-        content = data["choices"][0]["message"]["content"]
         if not content:
             print(f"API returned None content, using fallback", file=sys.stderr)
             return "夢日記――今日、空から金の雨が降った。人々は歓声を上げるが、それはただの錯覚。本当の富は心の中にあった。欲望は満たされたが、何かが足りない。明日も夢を見よう。"
