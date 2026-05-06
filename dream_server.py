@@ -64,7 +64,7 @@ def send_dream_email(dream_data):
         return False
     
     try:
-        msg = MIMEText(f"夢ID: {dream_data['id']}\n日付: {dream_data['date']}\n文字数: {dream_data['length']}\n\n{dream_data['text']}")
+        msg = MIMEText(f"夢ID: {dream_data['id']}\n日付: {dream_data['created_at']}\n文字数: {dream_data['length']}\n\n{dream_data['content']}")
         msg['Subject'] = Header(f"新しい夢日記 #{dream_data['id']}", 'utf-8')
         msg['From'] = smtp_user
         msg['To'] = to_email
@@ -94,6 +94,14 @@ def get_db(db_path=None): # Add optional db_path argument
             print(f"DB connection failed: {e}", file=sys.stderr)
             return None
     else:
+        if not db_path:
+            try:
+                from flask import current_app
+                if current_app:
+                    db_path = current_app.config.get('DB_PATH')
+            except (ImportError, RuntimeError):
+                pass
+
         sqlite_db_path = db_path if db_path else DB_PATH # Use provided path or fallback
         conn = sqlite3.connect(sqlite_db_path)
         conn.row_factory = sqlite3.Row  # Enable column name access
@@ -183,7 +191,7 @@ def load_initial_data():
 def normalize_to_200(text):
     """Normalize text to exactly 200 characters"""
     if not text or not isinstance(text, str):
-        return "夢の生成に失敗。再試行。" * 10  # Fallback text (20 chars * 10 = 200)
+        return "夢の生成に失敗。再試行。" * 16 + "夢の生成に失敗。" # 12*16 + 8 = 192 + 8 = 200
     flat = re.sub(r'\s+', '', text)
     if len(flat) > 200:
         return flat[:200]
@@ -223,10 +231,12 @@ def generate_dream(seed_content=None):
         content = data["choices"][0]["message"]["content"]
         if not content:
             print(f"API returned None content, using fallback", file=sys.stderr)
-            return "夢日記――今日、空から金の雨が降った。人々は歓声を上げるが、それはただの錯覚。本当の富は心の中にあった。欲望は満たされたが、何かが足りない。明日も夢を見よう。"
+            content = "夢日記――今日、空から金の雨が降った。人々は歓声を上げるが、それはただの錯覚。本当の富は心の中にあった。欲望は満たされたが、何かが足りない。明日も夢を見よう。"
         return normalize_to_200(content)
     except Exception as e:
+        import traceback
         print(f"Error in generate_dream: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
         return None
 
 # データベース操作
@@ -330,7 +340,6 @@ def get_all_seeds():
 
 # ---- Flaskアプリ ----
 app = Flask(__name__)
-init_db()
 
 def serialize_dream_data(dream_data):
     if isinstance(dream_data, list):
@@ -428,7 +437,9 @@ def random_dream():
             dream = serialize_dream_data(dream)
         return format_response(dream, fmt)
     except Exception as e:
+        import traceback
         print(f"Error saving/retrieving dream: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
         return jsonify({"error": "データベースエラーが発生しました"}), 500
 
 @app.route('/api/dreams')
@@ -556,6 +567,7 @@ if __name__ == '__main__':
     elif args.single:
         single_generate()
     else:
+        init_db()
         # 初期データのロード（Neonが空の場合）
         load_initial_data()
         print(f"Starting Flask server on port {args.port}...")
