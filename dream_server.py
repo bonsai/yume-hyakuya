@@ -483,6 +483,10 @@ def serve_dream_json():
 def favicon():
     return app.send_static_file('favicon.ico')
 
+@app.route('/voice_dream')
+def voice_dream_page():
+    return render_template('voice_dream.html')
+
 @app.route('/raw')
 def raw_dream():
     content = generate_dream()
