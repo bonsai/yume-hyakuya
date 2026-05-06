@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>自動再生 夢日記</title>
+    <style>
+        body{font-family:sans-serif;max-width:600px;margin:auto;padding:2rem}
+        #dream{white-space:pre-wrap;margin-bottom:1rem}
+        #nextBtn{display:inline-block}
+    </style>
+</head>
+<body>
+    <h1>夢日記自動再生</h1>
+    <div id="dream">読み込み中…</div>
+    <button id="nextBtn">次へ</button>
+
+    <script>
+        const DREAM_URL = '/api/dream/random?format=txt'
+
+        async function fetchDream() {
+            try {
+                const res = await fetch(DREAM_URL)
+                if (!res.ok) throw new Error('Network error')
+                const text = await res.text()
+                document.getElementById('dream').textContent = text
+                speak(text)
+            } catch (e) {
+                document.getElementById('dream').textContent = '取得失敗'
+                console.error(e)
+            }
+        }
+
+        function speak(text) {
+            const utter = new SpeechSynthesisUtterance(text)
+            // 日本語で読み上げるように設定
+            utter.lang = 'ja-JP'
+            utter.rate = 1.1
+            utter.onend = () => {
+                // 読み終わったら10秒待って次の夢を取得
+                setTimeout(fetchDream, 10000)
+            }
+            speechSynthesis.speak(utter)
+        }
+
+        document.getElementById('nextBtn').onclick = () => {
+            // 手動で次へボタンを押したら直ちに読み上げを停止して次の夢へ
+            speechSynthesis.cancel()
+            fetchDream()
+        }
+
+        // ページ読み込みで最初の夢を取得
+        window.addEventListener('load', fetchDream)
+    </script>
+</body>
+</html>
