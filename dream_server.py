@@ -12,7 +12,7 @@ from typing import List, Dict, Any
 from email.utils import formatdate
 from datetime import datetime
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify, Response
+from flask import Flask, render_template, request, jsonify, Response, current_app
 from flask_cors import CORS
 import xml.etree.ElementTree as ET
 import threading
@@ -64,7 +64,7 @@ def send_dream_email(dream_data):
         return False
     
     try:
-        msg = MIMEText(f"夢ID: {dream_data['id']}\n日付: {dream_data['date']}\n文字数: {dream_data['length']}\n\n{dream_data['text']}")
+        msg = MIMEText(f"夢ID: {dream_data['id']}\n日付: {dream_data['created_at']}\n文字数: {dream_data['length']}\n\n{dream_data['content']}")
         msg['Subject'] = Header(f"新しい夢日記 #{dream_data['id']}", 'utf-8')
         msg['From'] = smtp_user
         msg['To'] = to_email
@@ -94,7 +94,16 @@ def get_db(db_path=None): # Add optional db_path argument
             print(f"DB connection failed: {e}", file=sys.stderr)
             return None
     else:
-        sqlite_db_path = db_path if db_path else DB_PATH # Use provided path or fallback
+        if db_path:
+            sqlite_db_path = db_path
+        else:
+            try:
+                # Try to get DB_PATH from Flask config if in app context
+                sqlite_db_path = current_app.config.get('DB_PATH', DB_PATH)
+            except RuntimeError:
+                # Fallback to global DB_PATH if outside app context
+                sqlite_db_path = DB_PATH
+
         conn = sqlite3.connect(sqlite_db_path)
         conn.row_factory = sqlite3.Row  # Enable column name access
         return conn
@@ -217,7 +226,7 @@ def generate_dream(seed_content=None):
             return None
         data = resp.json()
         print(f"API Response Data: {data}", file=sys.stderr)
-        if "choices" not in data:
+        if not data.get("choices"):
             print(f"Unexpected response: {data}", file=sys.stderr)
             return None
         content = data["choices"][0]["message"]["content"]
@@ -246,7 +255,7 @@ def save_dream(content, source='ai', seed_id=None, db_path=None):
     conn.close()
 
     # メール送信 (非同期)
-    dream_data = get_dream(dream_id)
+    dream_data = get_dream(dream_id, db_path=db_path)
     if dream_data:
         email_thread = threading.Thread(target=send_dream_email, args=(dream_data,))
         email_thread.start()
@@ -266,8 +275,8 @@ def save_seed(content, db_path=None):
     conn.close()
     return seed_id
 
-def get_dream(dream_id):
-    conn = get_db()
+def get_dream(dream_id, db_path=None):
+    conn = get_db(db_path)
     c = conn.cursor()
     if DB_TYPE == "postgres":
         c.execute("SELECT id, content, created_at, length, source, seed_id, is_read FROM dreams WHERE id = %s", (dream_id,))
