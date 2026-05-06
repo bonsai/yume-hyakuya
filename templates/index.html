@@ -197,7 +197,7 @@
                         color: #dacaa8;
                         letter-spacing: 1px;
                   }
-                  /* 左側模式图标栏 */
+                  /* 左側模式图标欄 */
                   .mode-sidebar {
                         display: flex;
                         flex-direction: column;
@@ -578,7 +578,8 @@
 
             <script>
                   (function () {
-                        const TOTAL = 200;
+                        const MAX_CHAR = 200; // Define maximum character count
+                        const TOTAL = 200; // TOTAL characters for the grid
                         let fullText = "";
                         let characters = [];
                         let currentDreamId = null;
@@ -604,15 +605,9 @@
                         }
 
                         function normalizeText(str) {
-                              // 空白除去のみ、200字超えは切り捨て、不足はそのまま
+                              // 空白除去だけにして、200 文字まで切り捨て
                               const flat = str.replace(/\s+/g, "");
-                              if (flat.length > TOTAL) {
-                                    return flat.slice(0, TOTAL);
-                              }
-                              if (flat.length < TOTAL) {
-                                    return flat + '。'.repeat(TOTAL - flat.length); // Add padding
-                              }
-                              return flat;
+                              return flat.slice(0, MAX_CHAR);   // MAX_CHAR = 200（上限）だけ残す
                         }
 
                         const gridContainer =
@@ -674,9 +669,10 @@
                               let dynamicCols = Math.floor(maxGridWidth / idealCellSize);
                               dynamicCols = Math.max(15, Math.min(25, dynamicCols));
 
-                              const gridRows = Math.ceil(TOTAL / dynamicCols); // Use TOTAL and dynamicCols for rows
+                              const gridRows = 10; // Fixed at 10 rows
 
                               const cellSize = maxGridWidth / dynamicCols; // Recalculate cellSize to perfectly fit
+                              const totalCells = dynamicCols * gridRows; // Calculate total cells for the grid
 
                               document.documentElement.style.setProperty('--grid-cols', dynamicCols);
                               document.documentElement.style.setProperty('--grid-rows', gridRows);
@@ -686,15 +682,16 @@
                               gridContainer.style.width = 'fit-content';
                               gridContainer.style.margin = '0 auto';
                               
-                              // Create exactly TOTAL cells (200).  Each cell receives
-                              //   1️⃣ ベースフォントサイズ（スライダーで決定）  
-                              //   2️⃣ ランダムなフォントサイズ ±10%（視覚的に揺らぎ）  
-                              //   3️⃣ ランダムな不透明度（濃さ揺らぎ）  
-                              //   4️⃣ 文字サイズはセルサイズに対して 0.68 倍 を基準にし、スライダー分だけ上書き
-                              for (let i = 0; i < TOTAL; i++) {
+                              // 文字配列は 200 文字までに切り詰めるだけ。足りない分は空白のまま残す
+                              if (characters.length > MAX_CHAR) {
+                                    characters = characters.slice(0, MAX_CHAR);
+                              }
+
+                              // cells は rows × cols だけ作る。文字が無いセルは空白（ ""）のまま
+                              for (let i = 0; i < totalCells; i++) {
                                     const cell = document.createElement("div");
                                     cell.className = "cell";
-                                    cell.textContent = "";
+                                    cell.textContent = "";   // まだ空（文字が無いときはここに残す）
                                     cell.style.width = `${cellSize}px`;
                                     cell.style.height = `${cellSize}px`;
 
@@ -728,29 +725,28 @@
                         }
 
                         function revealCharacterAtIndex(index) {
-                              if (index >= 200 || !cells[index]) return;
+                              if (index >= characters.length || !cells[index]) return;
                               const cell = cells[index];
-                              if (cell.textContent !== "") return;
-                              const targetChar = characters[index];
-                              cell.textContent = targetChar;
+                              const char = characters[index];
+                              cell.textContent = char;
                               cell.classList.remove("pop");
-                              void cell.offsetWidth;
+                              void cell.offsetWidth;   // 再描画トリガ
                               cell.classList.add("pop");
                               setTimeout(() => {
                                     cell.classList.remove("pop");
                               }, 350);
                         }
-
                         function burstReveal() {
                               if (!isAnimating) return;
-                              if (revealedCount >= characters.length || revealedCount >= 200) {
+
+                              // すべての文字が表示されたら完了
+                              if (revealedCount >= characters.length) {
                                     if (timer) {
                                           clearInterval(timer);
                                           timer = null;
                                           isAnimating = false;
                                     }
-                                    progressStat.textContent =
-                                          "✨ 筆が止まる — 物語が完成 ✨";
+                                    progressStat.textContent = "✨ 筆が止まる — 物語が完成 ✨";
                                     
                                     // Auto-play next dream if enabled
                                     if (isAutoPlaying) {
@@ -760,31 +756,16 @@
                                     }
                                     return;
                               }
+
                               const nextIndex = revealedCount;
-                              if (nextIndex < characters.length && nextIndex < 200)
+                              if (nextIndex < characters.length) // Only reveal if there's a character
                                     revealCharacterAtIndex(nextIndex);
                               revealedCount += 1;
                               updateProgressText();
-                              if (revealedCount >= characters.length || revealedCount >= 200) {
-                                    if (timer) {
-                                          clearInterval(timer);
-                                          timer = null;
-                                          isAnimating = false;
-                                    }
-                                    progressStat.textContent =
-                                          "✨ 筆が止まる — 物語が完成 ✨";
-                                    
-                                    // Auto-play next dream if enabled
-                                    if (isAutoPlaying) {
-                                          setTimeout(() => {
-                                                fetchDream();
-                                          }, autoPlayDelaySeconds * 1000);
-                                    }
-                              }
                         }
 
                         function updateProgressText() {
-                              progressStat.textContent = `${revealedCount} / 200 字  曇→晴`;
+                              progressStat.textContent = `${revealedCount} / ${characters.length} 字  曇→晴`;
                         }
 
                         function startAnimation() {
