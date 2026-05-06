@@ -1,1159 +1,1274 @@
 <!doctype html>
 <html lang="ja">
-      <head>
-            <meta charset="UTF-8" />
-            <meta
-                  name="viewport"
-                  content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
-            />
-            <title>SF夢日記</title>
-            <style>
-                  * {
-                        box-sizing: border-box;
-                        user-select: none;
-                  }
-                  body {
-                        background: #b8a481;
-                        margin: 0;
-                        min-height: 100vh;
-                        font-family: "Kaisei Tokumin", "Noto Serif JP", serif;
-                        padding: 12px;
-                  }
-                  .main-panel {
-                        background: #2b231b;
-                        border-radius: 28px;
-                        padding: 12px 10px 18px 10px;
-                        box-shadow: 0 20px 30px rgba(0, 0, 0, 0.4);
-                  }
-                  .manuscript {
-                        background-color: #fef7e8;
-                        background-image: radial-gradient(
-                              circle at 20% 35%,
-                              rgba(180, 150, 110, 0.08) 2%,
-                              transparent 2.5%
-                        );
-                        background-size: 28px 28px;
-                        border-radius: 12px;
-                        padding: 12px 8px;
-                        box-shadow:
-                              inset 0 0 0 1px #fff5e4,
-                              0 6px 14px rgba(0, 0, 0, 0.2);
-                  }
+<head>
+    <meta charset="UTF-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>SF夢日記</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: #b8a481;
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Kaisei Tokumin", "Noto Serif JP", serif;
+            padding: 12px;
+        }
+        .main-panel {
+            background: #2b231b;
+            border-radius: 28px;
+            padding: 12px 10px 18px 10px;
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.4);
+        }
+        .manuscript {
+            background-color: #fef7e8;
+            background-image: radial-gradient(
+                circle at 20% 35%,
+                rgba(180, 150, 110, 0.08) 2%,
+                transparent 2.5%
+            );
+            background-size: 28px 28px;
+            border-radius: 12px;
+            padding: 12px 8px;
+            box-shadow:
+                inset 0 0 0 1px #fff5e4,
+                0 6px 14px rgba(0, 0, 0, 0.2);
+        }
 
-                  .cell {
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-weight: 470;
-                        color: #2e241d;
-                        border-right: 1px solid #c4b48a;
-                        border-bottom: 1px solid #c4b48a;
-                        background: #fffcf0;
-                        box-sizing: border-box;
-                        /* ベースサイズは JavaScript から --base-font-size で上書き */
-                        font-size: var(--base-font-size, 24px);
-                        /* ランダムに不透明度を変える（JS が上書き） */
-                        opacity: var(--cell-opacity, 1);
-                  }
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 470;
+            color: #2e241d;
+            border-right: 1px solid #c4b48a;
+            border-bottom: 1px solid #c4b48a;
+            background: #fffcf0;
+            box-sizing: border-box;
+            /* ベースサイズは JavaScript から --base-font-size で上書き */
+            font-size: var(--base-font-size, 24px);
+            /* ランダムに不透明度を変える（JS が上書き） */
+            opacity: var(--cell-opacity, 1);
+        }
 
-                  /* ---- border‑clean‑up for dynamic columns/rows ---- */
-                  .cell:nth-child(var(--grid-cols) * n) {
-                        border-right: none;           /* end of each row */
-                  }
-                  .cell:nth-last-child(-n + var(--grid-cols)) {
-                        border-bottom: none;         /* bottom of final row */
-                  }
-                  .cell:nth-child(var(--grid-cols) * var(--grid-rows)) {
-                        border-right: none;
-                        border-bottom: none;         /* the very last cell */
-                  }
+        /* ---- border‑clean‑up for dynamic columns/rows ---- */
+        .cell:nth-child(var(--grid-cols) * n) {
+            border-right: none;   /* end of each row */
+        }
+        .cell:nth-last-child(-n + var(--grid-cols)) {
+            border-bottom: none; /* bottom of final row */
+        }
+        .cell:nth-child(var(--grid-cols) * var(--grid-rows)) {
+            border-right: none;
+            border-bottom: none; /* the very last cell */
+        }
 
-                  /* -------------------------------------------------
-                     The grid is now dynamic – borders are handled
-                     with CSS variables (see below).  No hard‑coded
-                     nth‑child selectors.
-                  ------------------------------------------------- */
-                  .grid-dynamic {
-                        display: grid;
-                        width: fit-content;
-                        margin: 0 auto;
-                        gap: 0;
-                        background: #fffcf0;
-                        border: 2px solid #a89470;   /* outer frame */
-                        padding: 0;
-                        overflow: hidden;
-                        max-height: unset; /* Remove max-height constraint */
-                  }
-                  @keyframes brushPop {
-                        0% {
-                              transform: scale(2.1) rotate(-3deg);
-                              opacity: 0;
-                              text-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
-                              filter: blur(4px);
-                        }
-                        45% {
-                              transform: scale(1.2) rotate(1deg);
-                              opacity: 0.95;
-                              filter: blur(0px);
-                        }
-                        100% {
-                              transform: scale(1) rotate(0deg);
-                              opacity: 1;
-                              text-shadow: none;
-                              filter: blur(0);
-                        }
-                  }
-                  .cell.pop {
-                        animation: brushPop 0.32s cubic-bezier(0.3, 1.2, 0.5, 1)
-                              forwards;
-                  }
-                  .control-deck {
-                        display: flex;
-                        flex-wrap: wrap;
-                        justify-content: center;
-                        align-items: center;
-                        gap: 12px;
-                        background: #e2d4be;
-                        padding: 10px 16px;
-                        border-radius: 60px;
-                        margin-bottom: 18px;
-                  }
-                  .ctrl-group {
-                        display: flex;
-                        align-items: center;
-                        gap: 6px;
-                        background: #fcf3e2;
-                        padding: 4px 12px;
-                        border-radius: 40px;
-                  }
-                  .ctrl-group label {
-                        font-size: 0.7rem;
-                        font-weight: 800;
-                        letter-spacing: 1px;
-                        color: #513e28;
-                        background: #eadbc2;
-                        padding: 3px 10px;
-                        border-radius: 30px;
-                  }
-                  input[type="range"] {
-                        width: 130px;
-                        height: 4px;
-                        -webkit-appearance: none;
-                        appearance: none;
-                        background: #bcab8a;
-                        border-radius: 10px;
-                        outline: none;
-                  }
-                  input[type="range"]::-webkit-slider-thumb {
-                        -webkit-appearance: none;
-                        appearance: none;
-                        width: 16px;
-                        height: 16px;
-                        border-radius: 50%;
-                        background: #6a4f32;
-                        cursor: pointer;
-                        border: none;
-                  }
-                  .value-badge {
-                        background: #2f261e;
-                        color: #eedbbc;
-                        font-size: 0.7rem;
-                        padding: 2px 8px;
-                        border-radius: 30px;
-                        font-family: monospace;
-                        font-weight: bold;
-                        min-width: 44px;
-                        text-align: center;
-                  }
-                  button {
-                        background: #8f6a48;
-                        border: none;
-                        font-family: inherit;
-                        font-weight: bold;
-                        color: #fef0df;
-                        padding: 6px 18px;
-                        border-radius: 40px;
-                        font-size: 0.8rem;
-                        letter-spacing: 1px;
-                        cursor: pointer;
-                        transition: 0.2s;
-                  }
-                  button:active {
-                        transform: scale(0.96);
-                        background: #6b4d30;
-                  }
-                  .progress-chip {
-                        background: #cebb97;
-                        padding: 4px 12px;
-                        border-radius: 32px;
-                        font-size: 0.7rem;
-                        font-weight: bold;
-                        color: #2a211a;
-                  }
-                  .footnote {
-                        text-align: center;
-                        margin-top: 15px;
-                        font-size: 0.6rem;
-                        color: #dacaa8;
-                        letter-spacing: 1px;
-                  }
-                  /* 左側模式图标欄 */
-                  .mode-sidebar {
-                        display: flex;
-                        flex-direction: column;
-                        gap: 16px;
-                        padding: 20px 10px;
-                        background: #2b231b;
-                        border-radius: 24px;
-                        width: 120px;
-                        align-items: center;
-                        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-                        height: fit-content;
-                  }
-                  .mode-tab {
-                        width: 80px;
-                        height: 80px;
-                        border-radius: 16px;
-                        background: #e2d4be;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        justify-content: center;
-                        font-size: 0.7rem;
-                        font-weight: bold;
-                        color: #513e28;
-                        cursor: pointer;
-                        transition: all 0.2s;
-                        border: 3px solid transparent;
-                  }
-                  .mode-tab.active {
-                        background: #8f6a48;
-                        color: #fef0df;
-                        border-color: #fef0df;
-                  }
-                  .mode-tab .icon {
-                        font-size: 1.8rem;
-                        margin-bottom: 4px;
-                  }
-                  .github-link {
-                        text-decoration: none;
-                        color: inherit;
-                  }
-                  .github-link:hover {
-                        background: #a89470;
-                        color: #fef0df;
-                        transform: scale(1.05);
-                  }
-                  /* 右側内容区 */
-                  .content-area {
-                        flex: 1;
-                        background: #2b231b;
-                        border-radius: 24px;
-                        padding: 20px;
-                        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-                        min-height: 80vh;
-                        position: relative;
-                  }
-                  /* 各模式区域共通 */
-                  .mode-content {
-                        display: none;
-                        height: 100%;
-                  }
-                  .mode-content.active {
-                        display: flex;
-                        flex-direction: column;
-                  }
-                  /* 投稿モード */
-                  .post-area {
-                        padding: 20px;
-                        background: #3a2e24;
-                        border-radius: 12px;
-                        color: #eedbbc;
-                        gap: 16px;
-                  }
-                  .post-area h3 {
-                        color: #fef0df;
-                        margin-bottom: 8px;
-                  }
-                  .post-tabs {
-                        display: flex;
-                        gap: 8px;
-                        margin-bottom: 16px;
-                  }
-                  .post-tab {
-                        background: #e2d4be;
-                        padding: 8px 16px;
-                        border-radius: 30px;
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                        cursor: pointer;
-                        transition: all 0.2s;
-                  }
-                  .post-tab.active {
-                        background: #8f6a48;
-                        color: #fef0df;
-                  }
-                  .post-tab:hover {
-                        background: #a89470;
-                        color: #fef0df;
-                  }
-                  .tab-icon {
-                        font-size: 1.2rem;
-                  }
-                  .tab-content {
-                        display: none;
-                  }
-                  .tab-content.active {
-                        display: block;
-                  }
-                  .list-container {
-                        background: #2b231b;
-                        border-radius: 8px;
-                        padding: 16px;
-                        max-height: 300px;
-                        overflow-y: auto;
-                  }
-                  .list-item {
-                        background: #e2d4be;
-                        padding: 12px;
-                        margin-bottom: 8px;
-                        border-radius: 6px;
-                        cursor: pointer;
-                        transition: all 0.2s;
-                  }
-                  .list-item:hover {
-                        background: #8f6a48;
-                        color: #fef0df;
-                  }
-                  .loading {
-                        text-align: center;
-                        color: #a89470;
-                        padding: 20px;
-                  }
-                  .post-area textarea {
-                        width: 100%;
-                        height: 120px;
-                        background: #2b231b;
-                        border: 1px solid #5a4e44;
-                        color: #eedbbc;
-                        border-radius: 8px;
-                        padding: 12px;
-                        font-family: inherit;
-                        font-size: 1rem;
-                        resize: vertical;
-                        margin-bottom: 12px;
-                  }
-                  .post-area button {
-                        width: 100%;
-                        padding: 12px;
-                        background: #8f6a48;
-                        border: none;
-                        color: #fef0df;
-                        border-radius: 8px;
-                        font-family: inherit;
-                        font-weight: bold;
-                        font-size: 1rem;
-                        cursor: pointer;
-                  }
-                  .adjust-area {
-                        padding: 20px;
-                        background: #e2d4be;
-                        border-radius: 12px;
-                        gap: 20px;
-                  }
-                  .adjust-area h3 {
-                        color: #513e28;
-                        margin-bottom: 16px;
-                  }
-                  .adjust-area .ctrl-group {
-                        background: #fcf3e2;
-                        padding: 12px;
-                        border-radius: 40px;
-                  }
-                  .adjust-area .ctrl-group label {
-                        background: #eadbc2;
-                  }
-                  .adjust-area .control-buttons {
-                        display: flex;
-                        gap: 12px;
-                        margin-top: 20px;
-                  }
-                  .adjust-area .control-buttons button {
-                        flex: 1;
-                        padding: 12px;
-                        background: #8f6a48;
-                        border: none;
-                        color: #fef0df;
-                        border-radius: 40px;
-                        font-family: inherit;
-                        font-weight: bold;
-                        font-size: 0.9rem;
-                        cursor: pointer;
-                        transition: 0.2s;
-                  }
-                  .adjust-area .control-buttons button:active {
-                        transform: scale(0.96);
-                        background: #6b4d30;
-                  }
-                  .app-container {
-                        width: 100%;
-                        max-width: 1200px;
-                        display: flex;
-                        flex-direction: row;
-                        gap: 20px;
-                        align-items: flex-start;
-                  }
-            </style>
-      </head>
-      <body>
-            <div class="app-container">
-                  <div class="mode-sidebar">
-                        <div class="mode-tab active" data-mode="read">
-                              <div class="icon">📖</div>
-                              <div>読む</div>
-                        </div>
-                        <div class="mode-tab" data-mode="post">
-                              <div class="icon">✉️</div>
-                              <div>投稿</div>
-                        </div>
-                        <div class="mode-tab" data-mode="adjust">
-                              <div class="icon">⚙️</div>
-                              <div>調節</div>
-                        </div>
-                        <a href="https://github.com/bonsai/yume-hyakuya" target="_blank" class="mode-tab github-link">
-                              <div class="icon">💻</div>
-                              <div>GitHub</div>
-                        </a>
-                        <a href="/voice_dream" target="_blank" class="mode-tab voice-link">
-                              <div class="icon">🔊</div>
-                              <div>読み上げ</div>
-                        </a>
-                  </div>
+        /* -------------------------------------------------
+           The grid is now dynamic – borders are handled
+           with CSS variables (see below).  No hard‑coded
+           nth‑child selectors.
+        ------------------------------------------------- */
+        .grid-dynamic {
+            display: grid;
+            width: fit-content;
+            margin: 0 auto;
+            gap: 0;
+            background: #fffcf0;
+            border: 2px solid #a89470; /* outer frame */
+            padding: 0;
+            overflow: hidden;
+            max-height: unset;   /* Remove max-height constraint */
+        }
+        @keyframes brushPop {
+            0% {
+                transform: scale(2.1) rotate(-3deg);
+                opacity: 0;
+                text-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+                filter: blur(4px);
+            }
+            45% {
+                transform: scale(1.2) rotate(1deg);
+                opacity: 0.95;
+                filter: blur(0px);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+                text-shadow: none;
+                filter: blur(0);
+            }
+        }
+        .cell.pop {
+            animation: brushPop 0.32s cubic-bezier(0.3, 1.2, 0.5, 1)
+                forwards;
+        }
+        .control-deck {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            background: #e2d4be;
+            padding: 10px 16px;
+            border-radius: 60px;
+            margin-bottom: 18px;
+        }
+        .ctrl-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #fcf3e2;
+            padding: 4px 12px;
+            border-radius: 40px;
+        }
+        .ctrl-group label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #513e28;
+            background: #eadbc2;
+            padding: 3px 10px;
+            border-radius: 30px;
+        }
+        input[type="range"] {
+            width: 130px;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #bcab8a;
+            border-radius: 10px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6a4f32;
+            cursor: pointer;
+            border: none;
+        }
+        .value-badge {
+            background: #2f261e;
+            color: #eedbbc;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-family: monospace;
+            font-weight: bold;
+            min-width: 44px;
+            text-align: center;
+        }
+        button {
+            background: #8f6a48;
+            border: none;
+            font-family: inherit;
+            font-weight: bold;
+            color: #fef0df;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:active {
+            transform: scale(0.96);
+            background: #6b4d30;
+        }
+        .progress-chip {
+            background: #cebb97;
+            padding: 4px 12px;
+            border-radius: 32px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #2a211a;
+        }
+        .footnote {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.6rem;
+            color: #dacaa8;
+            letter-spacing: 1px;
+        }
+        /* 左側模式图标欄 */
+        .mode-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 20px 10px;
+            background: #2b231b;
+            border-radius: 24px;
+            width: 120px;
+            align-items: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            height: fit-content;
+        }
+        .mode-tab {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            background: #e2d4be;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #513e28;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 3px solid transparent;
+        }
+        .mode-tab.active {
+            background: #8f6a48;
+            color: #fef0df;
+            border-color: #fef0df;
+        }
+        .mode-tab .icon {
+            font-size: 1.8rem;
+            margin-bottom: 4px;
+        }
+        .github-link {
+            text-decoration: none;
+            color: inherit;
+        }
+        .github-link:hover {
+            background: #a89470;
+            color: #fef0df;
+            transform: scale(1.05);
+        }
+        /* 右側内容区 */
+        .content-area {
+            flex: 1;
+            background: #2b231b;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            min-height: 80vh;
+            position: relative;
+        }
+        /* 各模式区域共通 */
+        .mode-content {
+            display: none;
+            height: 100%;
+        }
+        .mode-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        /* 投稿モード */
+        .post-area {
+            padding: 20px;
+            background: #3a2e24;
+            border-radius: 12px;
+            color: #eedbbc;
+            gap: 16px;
+        }
+        .post-area h3 {
+            color: #fef0df;
+            margin-bottom: 8px;
+        }
+        .post-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .post-tab {
+            background: #e2d4be;
+            padding: 8px 16px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .post-tab.active {
+            background: #8f6a48;
+            color: #fef0df;
+        }
+        .post-tab:hover {
+            background: #a89470;
+            color: #fef0df;
+        }
+        .tab-icon {
+            font-size: 1.2rem;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .list-container {
+            background: #2b231b;
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .list-item {
+            background: #e2d4be;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .list-item:hover {
+            background: #8f6a48;
+            color: #fef0df;
+        }
+        .loading {
+            text-align: center;
+            color: #a89470;
+            padding: 20px;
+        }
+        .post-area textarea {
+            width: 100%;
+            height: 120px;
+            background: #2b231b;
+            border: 1px solid #5a4e44;
+            color: #eedbbc;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+        .post-area button {
+            width: 100%;
+            padding: 12px;
+            background: #8f6a48;
+            border: none;
+            color: #fef0df;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .adjust-area {
+            padding: 20px;
+            background: #e2d4be;
+            border-radius: 12px;
+            gap: 20px;
+        }
+        .adjust-area h3 {
+            color: #513e28;
+            margin-bottom: 16px;
+        }
+        .adjust-area .ctrl-group {
+            background: #fcf3e2;
+            padding: 12px;
+            border-radius: 40px;
+        }
+        .adjust-area .ctrl-group label {
+            background: #eadbc2;
+        }
+        .adjust-area .control-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .adjust-area .control-buttons button {
+            flex: 1;
+            padding: 12px;
+            background: #8f6a48;
+            border: none;
+            color: #fef0df;
+            border-radius: 40px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .adjust-area .control-buttons button:active {
+            transform: scale(0.96);
+            background: #6b4d30;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        /* 追加 CSS（templates/index.html の <style> 内） */
+        .voice-btn {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .voice-btn:hover {
+            background: #a89470;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="mode-sidebar">
+            <div class="mode-tab active" data-mode="read">
+                <div class="icon">📖</div>
+                <div>読む</div>
+            </div>
+            <div class="mode-tab" data-mode="post">
+                <div class="icon">✉️</div>
+                <div>投稿</div>
+            </div>
+            <div class="mode-tab" data-mode="adjust">
+                <div class="icon">⚙️</div>
+                <div>調節</div>
+            </div>
+            <a href="https://github.com/bonsai/yume-hyakuya" target="_blank" class="mode-tab github-link">
+                <div class="icon">💻</div>
+                <div>GitHub</div>
+            </a>
+            <a href="/voice_dream" target="_blank" class="mode-tab voice-link">
+                <div class="icon">🔊</div>
+                <div>読み上げ</div>
+            </a>
+        </div>
 
-                  <!-- 右側内容区 -->
-                  <div class="content-area">
-                        <!-- 読むモード -->
-                        <div class="mode-content active" id="readArea">
-                              <div class="main-panel">
-                                    <div class="manuscript">
-                                          <div
-                                                class="grid-dynamic"
-                                                id="manuscriptGrid"
-                                          ></div>
-                                    </div>
-                              </div>
-                        </div>
-
-                        <!-- 投稿モード -->
-                        <div class="mode-content post-area" id="postArea">
-                              <div class="post-tabs">
-                                    <div class="post-tab active" data-tab="submit">
-                                          <div class="tab-icon">✉️</div>
-                                          <div>種投稿</div>
-                                    </div>
-                                    <div class="post-tab" data-tab="seeds">
-                                          <div class="tab-icon">🌱</div>
-                                          <div>種一覧</div>
-                                    </div>
-                                    <div class="post-tab" data-tab="dreams">
-                                          <div class="tab-icon">💭</div>
-                                          <div>夢一覧</div>
-                                    </div>
-                              </div>
-                              
-                              <!-- 種投稿 -->
-                              <div class="tab-content active" id="submitTab">
-                                    <h3>夢の種を投稿</h3>
-                                    <form id="seedForm">
-                                          <textarea
-                                                placeholder="夢の種（アイデア）を入力してください..."
-                                          ></textarea>
-                                          <button type="submit">
-                                                投稿して夢を生成
-                                          </button>
-                                    </form>
-                                    <div class="footnote" style="margin-top: 12px">
-                                          投稿するとAIが夢を生成し、自動表示します
-                                    </div>
-                              </div>
-                              
-                              <!-- 種一覧 -->
-                              <div class="tab-content" id="seedsTab">
-                                    <h3>夢の種一覧</h3>
-                                    <div class="list-container" id="seedsList">
-                                          <div class="loading">読み込み中...</div>
-                                    </div>
-                              </div>
-                              
-                              <!-- 夢一覧 -->
-                              <div class="tab-content" id="dreamsTab">
-                                    <h3>生成された夢一覧</h3>
-                                    <div class="list-container" id="dreamsList">
-                                          <div class="loading">読み込み中...</div>
-                                    </div>
-                              </div>
-                        </div>
-
-                        <!-- 調節モード -->
-                        <div class="mode-content adjust-area" id="adjustArea">
-                              <h3>表示速度調節</h3>
-                              <div class="ctrl-group">
-                                    <label>⚡速度</label>
-                                    <input
-                                          type="range"
-                                          id="speedSlider"
-                                          min="20"
-                                          max="180"
-                                          step="5"
-                                          value="200"
-                                    />
-                                    <span id="speedVal" class="value-badge"
-                                                >200ms</span
-                                          >
-                                    </div>
-                                    <!-- 文字サイズ（ベース） -->
-                                    <div class="ctrl-group">
-                                         <label>🔤文字サイズ</label>
-                                         <input
-                                               type="range"
-                                               id="fontSizeSlider"
-                                               min="12"
-                                               max="48"
-                                               step="1"
-                                               value="24"
-                                         />
-                                         <span id="fontSizeVal" class="value-badge"
-                                               >24px</span
-                                         >
-                                    </div>
-                                    <!-- 文字濃さ（不透明度）のランダム幅 -->
-                                    <div class="ctrl-group">
-                                         <label>🌓濃さ‑揺らぎ</label>
-                                         <input
-                                               type="range"
-                                               id="opacitySlider"
-                                               min="0"
-                                               max="40"
-                                               step="2"
-                                               value="10"
-                                         />
-                                         <span id="opacityVal" class="value-badge"
-                                               >10%</span
-                                         >
-                                    </div>
-                                    <div class="control-buttons">                                    <button id="replayBtn">
-                                          ☁️ 筆洗う・再演
-                                    </button>
-                                    <button id="newDreamBtn">
-                                          🌙 新しい夢
-                                    </button>
-                                    <button id="autoPlayBtn">
-                                          ▶️ 自動再生
-                                    </button>
-                                    </div>
-                                    <!-- 5 話連続再生ボタン -->
-                                    <div class="ctrl-group" style="margin-top:8px;">
-                                    <button id="playLast5Btn">📚 直近5話を連続再生</button>
-                                    </div>
-                                    <!-- 種投稿への誘い -->
-                                    <div class="progress-chip" id="seedInvite" style="margin-top:6px; cursor:pointer;">
-                                    🌱 君も夢の種を撒かないか？
-                                    </div>                              <div class="ctrl-group">
-                                    <label>⏱️ 再生間隔</label>
-                                    <input
-                                          type="range"
-                                          id="autoPlayDelay"
-                                          min="3"
-                                          max="15"
-                                          step="1"
-                                          value="8"
-                                    />
-                                    <span id="delayVal" class="value-badge"
-                                          >8秒</span
-                                    >
-                              </div>
-                              <div class="progress-chip" id="autoPlayStatus">
-                                    自動再生: OFF
-                              </div>
-                              <div class="progress-chip" id="progressStat">
-                                    0 / 200
-                              </div>
-                        </div>
-                  </div>
+        <!-- 右側内容区 -->
+        <div class="content-area">
+            <!-- 読むモード -->
+            <div class="mode-content active" id="readArea">
+                <div class="main-panel">
+                    <div class="manuscript">
+                        <div
+                            class="grid-dynamic"
+                            id="manuscriptGrid"
+                        ></div>
+                    </div>
+                </div>
             </div>
 
-            <script>
-                  (function () {
-                        const MAX_CHAR = 200; // Define maximum character count
-                        const TOTAL = 200; // TOTAL characters for the grid
-                        let fullText = "";
-                        let characters = [];
-                        let currentDreamId = null;
+            <!-- 投稿モード -->
+            <div class="mode-content post-area" id="postArea">
+                <div class="post-tabs">
+                    <div class="post-tab active" data-tab="submit">
+                        <div class="tab-icon">✉️</div>
+                        <div>種投稿</div>
+                    </div>
+                    <div class="post-tab" data-tab="seeds">
+                        <div class="tab-icon">🌱</div>
+                        <div>種一覧</div>
+                    </div>
+                    <div class="post-tab" data-tab="dreams">
+                        <div class="tab-icon">💭</div>
+                        <div>夢一覧</div>
+                    </div>
+                </div>
+                
+                <!-- 種投稿 -->
+                <div class="tab-content active" id="submitTab">
+                    <h3>夢の種を投稿</h3>
+                    <form id="seedForm">
+                        <textarea
+                            placeholder="夢の種（アイデア）を入力してください..."
+                            id="seedTextarea"
+                        ></textarea>
+                        <!-- 音声入力開始/停止ボタン -->
+                        <button type="button"
+                                id="voiceInputBtn"
+                                class="voice-btn"
+                                title="音声で種を入力"
+                                style="margin-left:8px; background:#6a4f32; color:#fef0df; border:none; border-radius:4px; padding:4px 8px;">
+                            🎙️ 音声入力
+                        </button>
+                        <button type="submit">
+                            投稿して夢を生成
+                        </button>
+                    </form>
+                    <div class="footnote" style="margin-top: 12px">
+                        投稿するとAIが夢を生成し、自動表示します
+                    </div>
+                </div>
+                
+                <!-- 種一覧 -->
+                <div class="tab-content" id="seedsTab">
+                    <h3>夢の種一覧</h3>
+                    <div class="list-container" id="seedsList">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                
+                <!-- 夢一覧 -->
+                <div class="tab-content" id="dreamsTab">
+                    <h3>生成された夢一覧</h3>
+                    <div class="list-container" id="dreamsList">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+            </div>
 
-                        async function fetchDream(dreamId = null) {
-                              try {
-                                    let url = "/api/dream/random";
-                                    if (dreamId) url = `/api/dream/${dreamId}`;
-                                    const res = await fetch(url);
-                                    if (!res.ok)
-                                          throw new Error(
-                                                "夢の取得に失敗しました",
-                                          );
-                                    const dream = await res.json();
-                                    fullText = dream.content || "";
-                                     fullText = normalizeText(fullText);
-                                    characters = fullText.split("");
-                                    currentDreamId = dream.id;
-                                    initGrid();
-                              } catch (err) {
-                                    alert("エラー: " + err.message);
-                              }
+            <!-- 調節モード -->
+            <div class="mode-content adjust-area" id="adjustArea">
+                <h3>表示速度調節</h3>
+                <div class="ctrl-group">
+                    <label>⚡速度</label>
+                    <input
+                        type="range"
+                        id="speedSlider"
+                        min="20"
+                        max="180"
+                        step="5"
+                        value="200"
+                    />
+                    <span id="speedVal" class="value-badge"
+                        >200ms</span
+                    >
+                </div>
+                <!-- 文字サイズ（ベース） -->
+                <div class="ctrl-group">
+                    <label>🔤文字サイズ</label>
+                    <input
+                        type="range"
+                        id="fontSizeSlider"
+                        min="12"
+                        max="48"
+                        step="1"
+                        value="24"
+                    />
+                    <span id="fontSizeVal" class="value-badge"
+                        >24px</span
+                    >
+                </div>
+                <!-- 文字濃さ（不透明度）のランダム幅 -->
+                <div class="ctrl-group">
+                    <label>🌓濃さ‑揺らぎ</label>
+                    <input
+                        type="range"
+                        id="opacitySlider"
+                        min="0"
+                        max="40"
+                        step="2"
+                        value="10"
+                    />
+                    <span id="opacityVal" class="value-badge"
+                        >10%</span
+                    >
+                </div>
+                <div class="control-buttons">
+                    <button id="replayBtn">
+                        ☁️ 筆洗う・再演
+                    </button>
+                    <button id="newDreamBtn">
+                        🌙 新しい夢
+                    </button>
+                    <button id="autoPlayBtn">
+                        ▶️ 自動再生
+                    </button>
+                </div>
+                <!-- 5 話連続再生ボタン -->
+                <div class="ctrl-group" style="margin-top:8px;">
+                    <button id="playLast5Btn">📚 直近5話を連続再生</button>
+                </div>
+                <!-- 種投稿への誘い -->
+                <div class="progress-chip" id="seedInvite" style="margin-top:6px; cursor:pointer;">
+                    🌱 君も夢の種を撒かないか？
+                </div>
+                <!-- 音声コマンドボタン（UI操作用） -->
+                <div class="ctrl-group" style="margin-top:8px;">
+                    <button id="voiceCommandBtn"
+                            class="voice-btn"
+                            style="background:#6a4f32; color:#fef0df; border:none; border-radius:4px; padding:4px 12px;">
+                        🎤 音声コマンド
+                    </button>
+                </div>
+                <div class="ctrl-group">
+                    <label>⏱️ 再生間隔</label>
+                    <input
+                        type="range"
+                        id="autoPlayDelay"
+                        min="3"
+                        max="15"
+                        step="1"
+                        value="8"
+                    />
+                    <span id="delayVal" class="value-badge"
+                        >8秒</span
+                    >
+                </div>
+                <div class="progress-chip" id="autoPlayStatus">
+                    自動再生: OFF
+                </div>
+                <div class="progress-chip" id="progressStat">
+                    0 / 200
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const MAX_CHAR = 200; // Define maximum character count
+            const TOTAL = 200; // TOTAL characters for the grid
+            let fullText = "";
+            let characters = [];
+            let currentDreamId = null;
+
+            async function fetchDream(dreamId = null) {
+                try {
+                    let url = "/api/dream/random";
+                    if (dreamId) url = `/api/dream/${dreamId}`;
+                    const res = await fetch(url);
+                    if (!res.ok)
+                        throw new Error(
+                            "夢の取得に失敗しました",
+                        );
+                    const dream = await res.json();
+                    fullText = dream.content || "";
+                    fullText = normalizeText(fullText);
+                    characters = fullText.split("");
+                    currentDreamId = dream.id;
+                    initGrid();
+                } catch (err) {
+                    alert("エラー: " + err.message);
+                }
+            }
+
+            function normalizeText(str) {
+                // 空白除去だけにして、200 文字まで切り捨て
+                const flat = str.replace(/\s+/g, "");
+                return flat.slice(0, MAX_CHAR);   // MAX_CHAR = 200（上限）だけ残す
+            }
+
+            const gridContainer =
+                document.getElementById("manuscriptGrid");
+            const speedSlider =
+                document.getElementById("speedSlider");
+            const speedVal = document.getElementById("speedVal");
+            const fontSizeSlider = document.getElementById("fontSizeSlider");
+            const fontSizeVal = document.getElementById("fontSizeVal");
+            const opacitySlider = document.getElementById("opacitySlider");
+            const opacityVal = document.getElementById("opacityVal");
+            const replayBtn = document.getElementById("replayBtn");
+            const newDreamBtn =
+                document.getElementById("newDreamBtn");
+            const autoPlayBtn = document.getElementById("autoPlayBtn");
+            const autoPlayDelay = document.getElementById("autoPlayDelay");
+            const delayVal = document.getElementById("delayVal");
+            const autoPlayStatus = document.getElementById("autoPlayStatus");
+            const progressStat =
+                document.getElementById("progressStat");
+
+            // モード切り替え
+            const modeTabs = document.querySelectorAll(".mode-tab");
+            const readArea = document.getElementById("readArea");
+            const postArea = document.getElementById("postArea");
+            const adjustArea =
+                document.getElementById("adjustArea");
+
+            let cells = [];
+            let revealedCount = 0;
+            let timer = null;
+            let isAnimating = false;
+            let currentSpeed = 200;
+            let autoPlayTimer = null;
+            let isAutoPlaying = false;
+            let autoPlayDelaySeconds = 8;
+            let lastRevealedIndex = 0;
+
+            // ---- 5 話連続再生用変数 ----
+            let last5Dreams = [];   // 取得した 5 件の文字列配列
+            let last5Index = 0;   // 現在再生中の話番号 (0‑4)
+
+            // SpeechRecognition（音声認識）準備
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition = null;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'ja-JP';
+                recognition.interimResults = true;   // 中間結果を取得
+                recognition.maxAlternatives = 1;
+            }
+            let isListening = false;   // マイクがオンかオフかのフラグ
+
+            function initGrid() {
+                // UI のスライダー状態を最新に反映
+                currentSpeed = parseInt(speedSlider.value, 10);
+                speedVal.innerText = currentSpeed + "ms";
+                fontSizeVal.innerText = fontSizeSlider.value + "px";
+                opacityVal.innerText = opacitySlider.value + "%";
+                bindSliders();
+                buildEmptyGrid();
+                startAnimation();
+            }
+
+            function buildEmptyGrid() {
+                gridContainer.innerHTML = "";
+                cells = [];
+                
+                const viewportWidth = window.innerWidth;
+                const maxGridWidth = Math.min(viewportWidth * 0.8, 900);
+
+                // Calculate dynamic gridCols (15-25 columns)
+                const idealCellSize = 60; // Target ideal cell size
+                let dynamicCols = Math.floor(maxGridWidth / idealCellSize);
+                dynamicCols = Math.max(15, Math.min(25, dynamicCols));
+
+                const gridRows = 10; // Fixed at 10 rows
+
+                const cellSize = maxGridWidth / dynamicCols; // Recalculate cellSize to perfectly fit
+                const totalCells = dynamicCols * gridRows; // Calculate total cells for the grid
+
+                document.documentElement.style.setProperty('--grid-cols', dynamicCols);
+                document.documentElement.style.setProperty('--grid-rows', gridRows);
+
+                gridContainer.style.gridTemplateColumns = `repeat(${dynamicCols}, ${cellSize}px)`;
+                gridContainer.style.gridTemplateRows = `repeat(${gridRows}, ${cellSize}px)`;
+                gridContainer.style.width = 'fit-content';
+                gridContainer.style.margin = '0 auto';
+                
+                // 文字配列は 200 文字までに切り詰めるだけ。足りない分は空白のまま残す
+                if (characters.length > MAX_CHAR) {
+                    characters = characters.slice(0, MAX_CHAR);
+                }
+
+                // cells は rows × cols だけ作る。文字が無いセルは空白（ ""）のまま
+                for (let i = 0; i < totalCells; i++) {
+                    const cell = document.createElement("div");
+                    cell.className = "cell";
+                    cell.textContent = "";   // まだ空（文字が無いときはここに残す）
+                    cell.style.width = `${cellSize}px`;
+                    cell.style.height = `${cellSize}px`;
+
+                    // ---- 基本フォントサイズ（スライダー値） ----
+                    const baseFont = parseInt(fontSizeSlider.value, 10);
+                    // ±10% の揺らぎを付加（オプションで調節したいならベースフォントに乗算すれば OK）
+                    const jitter = (Math.random() * 0.2 - 0.1) * baseFont; // -10% ～ +10%
+                    const finalFont = Math.max(12, Math.floor(baseFont + jitter));
+                    cell.style.fontSize = `${finalFont}px`;
+
+                    // ---- 文字濃さ（不透明度） ----
+                    // opacitySlider は「揺らぎ幅（%）」を表すので、0〜40% のランダム変化を付与
+                    const opacityJitter = opacitySlider.value / 100; // 0.0‑0.4
+                    const randOpacity = 1 - (Math.random() * opacityJitter); // 0.6‑1.0 (min opac = 1 - 0.4 = 0.6)
+                    cell.style.opacity = randOpacity.toFixed(2);
+
+                    gridContainer.appendChild(cell);
+                    cells.push(cell);
+                }
+            }
+
+            function resetGrid() {
+                for (let i = 0; i < cells.length; i++) {
+                    if (cells[i]) {
+                        cells[i].textContent = "";
+                        cells[i].classList.remove("pop");
+                    }
+                }
+                revealedCount = 0;
+                updateProgressText();
+            }
+
+            function revealCharacterAtIndex(index) {
+                if (index >= characters.length || !cells[index]) return;
+                const cell = cells[index];
+                const char = characters[index];
+                cell.textContent = char;
+                cell.classList.remove("pop");
+                void cell.offsetWidth;   // 再描画トリガ
+                cell.classList.add("pop");
+                setTimeout(() => {
+                    cell.classList.remove("pop");
+                }, 350);
+            }
+
+            // 5 話取得関数
+            async function loadLast5Dreams() {
+                try {
+                    const res = await fetch("/api/dream/last5");
+                    if (!res.ok) throw new Error("取得失敗");
+                    const data = await res.json();   // 配列が返ってくる
+                    // 文字列だけ抽出して配列化
+                    last5Dreams = data.map(d => d.content);
+                    return true;
+                } catch (e) {
+                    console.error("loadLast5Dreams error:", e);
+                    return false;
+                }
+            }
+
+            // 5 話再生開始
+            async function startLast5Playback() {
+                // まだ取得していなければロード
+                if (last5Dreams.length === 0) {
+                    const ok = await loadLast5Dreams();
+                    if (!ok) {
+                        alert("直近 5 件の取得に失敗しました");
+                        return;
+                    }
+                }
+                // 既存のタイマーは止す
+                if (timer) {
+                    clearInterval(timer);
+                    timer = null;
+                }
+                // まず現在のグリッドをリセットしてから
+                resetGrid();
+                revealedCount = 0;
+                last5Index = 0;
+                isAnimating = true;
+                // 1 件目のテキストで grid を構築
+                fullText = last5Dreams[last5Index];
+                characters = fullText.split("");
+                buildEmptyGrid();          // 文字数が変わってもセルは同じなので再構築は不要だが、表示領域が変わる可能性に備えて
+                // アニメーション開始（既存の burstReveal が文字単位なので流用）
+                burstReveal();
+                timer = setInterval(burstReveal, currentSpeed);
+            }
+
+            function burstReveal() {
+                if (!isAnimating) return;
+                // 通常文字表示（1 話または 5 話連続中の現在話）
+                if (revealedCount < characters.length) {
+                    revealCharacterAtIndex(revealedCount);
+                    revealedCount += 1;
+                    updateProgressText();
+                    return;
+                }
+
+                // 今の話が全部表示し終わった
+                clearInterval(timer);
+                timer = null;
+                isAnimating = false;
+
+                // 5 話モードかどうか判定
+                if (last5Dreams.length > 0 && last5Index < last5Dreams.length - 1) {
+                    // 次の話へ自動遷移
+                    last5Index += 1;
+                    fullText = last5Dreams[last5Index];
+                    characters = fullText.split("");
+                    revealedCount = 0;
+                    isAnimating = true;
+                    setTimeout(() => {
+                        timer = setInterval(burstReveal, currentSpeed);
+                    }, 500);   // 0.5 秒ブランク
+                    return;
+                }
+
+                // 完了メッセージ
+                progressStat.textContent = last5Dreams.length > 0 ?
+                    "✨ 5 話すべて完了 ✨" :
+                    "✨ 筆が止まる — 物語が完成 ✨";
+
+                // Auto‑play がオンの場合は次のランダム夢へ
+                if (isAutoPlaying) {
+                    setTimeout(() => fetchDream(), autoPlayDelaySeconds * 1000);
+                }
+            }
+
+            function updateProgressText() {
+                if (last5Dreams.length > 0) {
+                    const currentStory = last5Index + 1;
+                    const shown = Math.min(revealedCount, characters.length);
+                    progressStat.textContent = `第${currentStory}話 ${shown}/${characters.length}字`;
+                    return;
+                }
+                const shown = Math.min(revealedCount, characters.length);
+                progressStat.textContent = `${shown} / ${characters.length} 字  曇→晴`;
+            }
+
+            function startAnimation() {
+                if (timer) {
+                    clearInterval(timer);
+                    timer = null;
+                }
+                // 1 話モードの初期化
+                last5Dreams = [];   // 通常モードは空にしておく
+                last5Index = 0;
+                resetGrid();
+                revealedCount = 0;
+                isAnimating = true;
+                lastRevealedIndex = 0;
+                burstReveal();
+                timer = setInterval(burstReveal, currentSpeed);
+            }
+
+            function bindSliders() {
+                speedSlider.addEventListener("input", (e) => {
+                    currentSpeed = parseInt(e.target.value, 10);
+                    speedVal.innerText = currentSpeed + "ms";
+                    if (isAnimating && timer) {
+                        clearInterval(timer);
+                        timer = setInterval(
+                            burstReveal,
+                            currentSpeed,
+                        );
+                    }
+                });
+                // 文字サイズスライダー
+                fontSizeSlider.addEventListener("input", (e) => {
+                    const v = e.target.value;
+                    fontSizeVal.innerText = v + "px";
+                    // 変更は次回 grid ビルド時に反映させる
+                    if (!isAnimating) buildEmptyGrid();
+                });
+
+                // 濃さ揺らぎスライダー
+                opacitySlider.addEventListener("input", (e) => {
+                    const v = e.target.value;
+                    opacityVal.innerText = v + "%";
+                    // 変更は次回 grid ビルド時に反映させる
+                    if (!isAnimating) buildEmptyGrid();
+                });
+                
+                autoPlayDelay.addEventListener("input", (e) => {
+                    autoPlayDelaySeconds = parseInt(e.target.value, 10);
+                    delayVal.innerText = autoPlayDelaySeconds + "秒";
+                });
+
+                // 5 話連続再生ボタン
+                playLast5Btn.addEventListener("click", async () => {
+                    // 5 話連続再生は「自動再生」フラグとは独立して実行
+                    stopAutoPlay(); // Stop any ongoing auto-play
+                    await startLast5Playback();
+                });
+
+                // 「種を撒く」誘いクリック
+                seedInvite.addEventListener("click", () => {
+                    // mode タブの「投稿」へ切り替え
+                    const postTab = document.querySelector('.mode-tab[data-mode="post"]');
+                    if (postTab) postTab.click();   // クリックイベントを発火させるだけでモード切替ロジックが走ります
+                });
+
+                // -------------------------------------------------
+                // ★ 音声入力（種投稿） ★
+                // -------------------------------------------------
+                if (voiceInputBtn) {
+                    voiceInputBtn.addEventListener('click', toggleVoiceInput);
+                }
+
+                // -------------------------------------------------
+                // ★ 音声コマンド（UI操作） ★
+                // -------------------------------------------------
+                if (voiceCommandBtn) {
+                    voiceCommandBtn.addEventListener('click', toggleVoiceCommand);
+                }
+            }
+
+            // ★ 朗読（音声合成）関連関数 ★
+            // -------------------------------------------------
+            // isReadingAloud が定義されていないので、ここで宣言 (仮)
+            let isReadingAloud = false; // 音声合成が実行中かどうかのフラグ
+            let speechUtterance = null; // SpeechSynthesisUtterance インスタンス
+
+            function startReadingAloud(text) {
+                if (!('speechSynthesis' in window)) {
+                    alert('このブラウザは音声合成に対応していません');
+                    return;
+                }
+
+                if (isReadingAloud) return; // 二重起動防止
+
+                const wasAnimating = isAnimating; // アニメーション状態を保存
+                if (wasAnimating) {
+                    clearInterval(timer);
+                    timer = null;
+                    isAnimating = false;
+                }
+
+                speechUtterance = new SpeechSynthesisUtterance(text);
+                speechUtterance.lang = 'ja-JP';
+                speechUtterance.rate = 1.0;
+                speechUtterance.pitch = 1.0;
+
+                speechUtterance.onend = () => {
+                    isReadingAloud = false;
+                    // readAloudBtn.textContent = '🎧 朗読'; // ボタンがないためコメントアウト
+                    if (wasAnimating) startAnimation(); // アニメーション復帰
+                };
+
+                speechUtterance.onerror = (e) => {
+                    console.error('SpeechSynthesis error:', e);
+                    isReadingAloud = false;
+                    // readAloudBtn.textContent = '🎧 朗読'; // ボタンがないためコメントアウト
+                    if (wasAnimating) startAnimation();
+                };
+
+                isReadingAloud = true;
+                // readAloudBtn.textContent = '⏸️ 停止'; // ボタンがないためコメントアウト
+                window.speechSynthesis.speak(speechUtterance);
+            }
+
+            function stopReadingAloud() {
+                if (!isReadingAloud) return;
+                window.speechSynthesis.cancel();
+            }
+
+            function stopAllActivities() {
+                // アニメーションタイマー停止
+                if (timer) {
+                    clearInterval(timer);
+                    timer = null;
+                }
+                // 朗読停止
+                stopReadingAloud();
+                // AutoPlay 停止（必要なら）
+                stopAutoPlay();
+                // 音声入力・コマンドが走っていたら止める
+                if (isListening && recognition) {
+                    recognition.stop();
+                }
+            }
+
+            // モード切り替えイベント
+            modeTabs.forEach((tab) => {
+                tab.addEventListener("click", () => {
+                    // すべてのタブで共通に停止処理
+                    stopAllActivities();
+
+                    // 以降は既存処理（read / post / adjust）…
+                    const mode = tab.dataset.mode;
+                    readArea.classList.remove("active");
+                    postArea.classList.remove("active");
+                    adjustArea.classList.remove("active");
+                    if (mode === "read") {
+                        readArea.classList.add("active");
+                        if (timer) {
+                            clearInterval(timer);
+                            timer = null;
                         }
+                        // 読みモードに入ったら最新のスライダー設定で再構築
+                        buildEmptyGrid();
+                        startAnimation();
+                    } else if (mode === "post") {
+                        postArea.classList.add("active");
+                        stopAutoPlay();
+                    } else if (mode === "adjust") {
+                        adjustArea.classList.add("active");
+                        stopAutoPlay();
+                    }
+                });
+            });
 
-                        function normalizeText(str) {
-                              // 空白除去だけにして、200 文字まで切り捨て
-                              const flat = str.replace(/\s+/g, "");
-                              return flat.slice(0, MAX_CHAR);   // MAX_CHAR = 200（上限）だけ残す
-                        }
+            // 投稿タブ切り替え
+            const postTabs = document.querySelectorAll(".post-tab");
+            const submitTab = document.getElementById("submitTab");
+            const seedsTab = document.getElementById("seedsTab");
+            const dreamsTab = document.getElementById("dreamsTab");
+            
+            postTabs.forEach((tab) => {
+                tab.addEventListener("click", () => {
+                    postTabs.forEach((t) => t.classList.remove("active"));
+                    tab.classList.add("active");
+                    
+                    const tabName = tab.dataset.tab;
+                    submitTab.classList.remove("active");
+                    seedsTab.classList.remove("active");
+                    dreamsTab.classList.remove("active");
+                    
+                    if (tabName === "submit") {
+                        submitTab.classList.add("active");
+                    } else if (tabName === "seeds") {
+                        seedsTab.classList.add("active");
+                        loadSeeds();
+                    } else if (tabName === "dreams") {
+                        dreamsTab.classList.add("active");
+                        loadDreams();
+                    }
+                });
+            });
+            
+            // リスト読み込み関数
+            async function loadSeeds() {
+                const seedsList = document.getElementById("seedsList");
+                seedsList.innerHTML = '<div class="loading">読み込み中...</div>';
+                
+                try {
+                    const res = await fetch("/api/seeds");
+                    const data = await res.json();
+                    
+                    if (data.length === 0) {
+                        seedsList.innerHTML = '<div class="loading">種がありません</div>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    data.forEach(seed => {
+                        html += '<div class="list-item" onclick="useSeed(' + seed.id + ')"><div>種 #' + seed.id + ': ' + seed.content.substring(0, 30) + (seed.content.length > 30 ? '...' : '') + '</div></div>';
+                    });
+                    seedsList.innerHTML = html;
+                } catch (err) {
+                    seedsList.innerHTML = '<div class="loading">読み込みエラー</div>';
+                }
+            }
+            
+            async function loadDreams() {
+                const dreamsList = document.getElementById("dreamsList");
+                dreamsList.innerHTML = '<div class="loading">読み込み中...</div>';
+                
+                try {
+                    const res = await fetch("/api/dreams?limit=20");
+                    const data = await res.json();
+                    
+                    if (data.length === 0) {
+                        dreamsList.innerHTML = '<div class="loading">夢がありません</div>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    data.forEach(dream => {
+                        html += '<div class="list-item" onclick="viewDream(' + dream.id + ')"><div>夢 #' + dream.id + ': ' + dream.content.substring(0, 30) + (dream.content.length > 30 ? '...' : '') + '</div><div style="font-size: 0.8rem; color: #a89470;">' + dream.created_at + '</div></div>';
+                    });
+                    dreamsList.innerHTML = html;
+                } catch (err) {
+                    dreamsList.innerHTML = '<div class="loading">読み込みエラー</div>';
+                }
+            }
+            
+            async function useSeed(seedId) {
+                try {
+                    const res = await fetch(`/api/dream/random?seed_id=${seedId}`);
+                    if (!res.ok) {
+                        throw new Error("夢の取得に失敗しました");
+                    }
+                    const dream = await res.json();
+                    viewDream(dream.id);
+                } catch (err) {
+                    alert("エラー: " + err.message);
+                }
+            }
+            
+            function viewDream(dreamId) {
+                // Switch to read mode and load specific dream
+                modeTabs.forEach(tab => tab.classList.remove("active"));
+                document.querySelector('[data-mode="read"]').classList.add("active");
+                readArea.classList.add("active");
+                postArea.classList.remove("active");
+                adjustArea.classList.remove("active");
+                
+                fetchDream(dreamId);
+            }
 
-                        const gridContainer =
-                              document.getElementById("manuscriptGrid");
-                        const speedSlider =
-                              document.getElementById("speedSlider");
-                        const speedVal = document.getElementById("speedVal");
-                        const fontSizeSlider = document.getElementById("fontSizeSlider");
-                        const fontSizeVal = document.getElementById("fontSizeVal");
-                        const opacitySlider = document.getElementById("opacitySlider");
-                        const opacityVal = document.getElementById("opacityVal");
-                        const replayBtn = document.getElementById("replayBtn");
-                        const newDreamBtn =
-                              document.getElementById("newDreamBtn");
-                        const autoPlayBtn = document.getElementById("autoPlayBtn");
-                        const autoPlayDelay = document.getElementById("autoPlayDelay");
-                        const delayVal = document.getElementById("delayVal");
-                        const autoPlayStatus = document.getElementById("autoPlayStatus");
-                        const progressStat =
-                              document.getElementById("progressStat");
+            replayBtn.addEventListener("click", () => {
+                stopAllActivities(); // Stop everything first
+                startAnimation();
+            });
 
-                        // モード切り替え
-                        const modeTabs = document.querySelectorAll(".mode-tab");
-                        const readArea = document.getElementById("readArea");
-                        const postArea = document.getElementById("postArea");
-                        const adjustArea =
-                              document.getElementById("adjustArea");
+            newDreamBtn.addEventListener("click", () => {
+                stopAllActivities(); // Stop everything first
+                fetchDream();
+            });
+            
+            function toggleAutoPlay() {
+                if (isAutoPlaying) {
+                    stopAutoPlay();
+                }
+            } else {
+                startAutoPlay();
+            }
+            
+            function startAutoPlay() {
+                isAutoPlaying = true;
+                autoPlayBtn.textContent = "⏸️ 停止";
+                autoPlayStatus.textContent = "自動再生: ON";
+                autoPlayStatus.style.background = "#8f6a48";
+                autoPlayStatus.style.color = "#fef0df";
+                
+                // If not currently animating, start with a new dream
+                if (!isAnimating) {
+                    fetchDream();
+                }
+            }
+            
+            function stopAutoPlay() {
+                isAutoPlaying = false;
+                autoPlayBtn.textContent = "▶️ 自動再生";
+                autoPlayStatus.textContent = "自動再生: OFF";
+                autoPlayStatus.style.background = "#cebb97";
+                autoPlayStatus.style.color = "#2a211a";
+                
+                if (autoPlayTimer) {
+                    clearTimeout(autoPlayTimer);
+                    autoPlayTimer = null;
+                }
+            }
+            
+            autoPlayBtn.addEventListener("click", toggleAutoPlay);
 
-                        let cells = [];
-                        let revealedCount = 0;
-                        let timer = null;
-                        let isAnimating = false;
-                        let currentSpeed = 200;
-                        let autoPlayTimer = null;
-                        let isAutoPlaying = false;
-                        let autoPlayDelaySeconds = 8;
-                        let lastRevealedIndex = 0;
+            // 種投稿フォーム
+            const seedForm = document.getElementById("seedForm");
+            seedForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const textarea =
+                    seedForm.querySelector("textarea");
+                const content = textarea.value.trim();
+                if (!content) return;
 
-                        // ---- 5 話連続再生用変数 ----
-                        let last5Dreams = [];   // 取得した 5 件の文字列配列
-                        let last5Index   = 0;   // 現在再生中の話番号 (0‑4)
+                try {
+                    const seedRes = await fetch(
+                        "/api/seed/submit",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type":
+                                    "application/json",
+                            },
+                            body: JSON.stringify({
+                                content: content,
+                            }),
+                        },
+                    );
+                    const seedData = await seedRes.json();
+                    if (!seedRes.ok)
+                        throw new Error(
+                            seedData.error || "投稿失敗",
+                        );
 
-                        function initGrid() {
-                              // UI のスライダー状態を最新に反映
-                              currentSpeed = parseInt(speedSlider.value, 10);
-                              speedVal.innerText = currentSpeed + "ms";
-                              fontSizeVal.innerText = fontSizeSlider.value + "px";
-                              opacityVal.innerText = opacitySlider.value + "%";
-                              bindSliders();
-                              buildEmptyGrid();
-                              startAnimation();
-                        }
-
-                        function buildEmptyGrid() {
-                              gridContainer.innerHTML = "";
-                              cells = [];
-                              
-                              const viewportWidth = window.innerWidth;
-                              const maxGridWidth = Math.min(viewportWidth * 0.8, 900);
-
-                              // Calculate dynamic gridCols (15-25 columns)
-                              const idealCellSize = 60; // Target ideal cell size
-                              let dynamicCols = Math.floor(maxGridWidth / idealCellSize);
-                              dynamicCols = Math.max(15, Math.min(25, dynamicCols));
-
-                              const gridRows = 10; // Fixed at 10 rows
-
-                              const cellSize = maxGridWidth / dynamicCols; // Recalculate cellSize to perfectly fit
-                              const totalCells = dynamicCols * gridRows; // Calculate total cells for the grid
-
-                              document.documentElement.style.setProperty('--grid-cols', dynamicCols);
-                              document.documentElement.style.setProperty('--grid-rows', gridRows);
-
-                              gridContainer.style.gridTemplateColumns = `repeat(${dynamicCols}, ${cellSize}px)`;
-                              gridContainer.style.gridTemplateRows = `repeat(${gridRows}, ${cellSize}px)`;
-                              gridContainer.style.width = 'fit-content';
-                              gridContainer.style.margin = '0 auto';
-                              
-                              // 文字配列は 200 文字までに切り詰めるだけ。足りない分は空白のまま残す
-                              if (characters.length > MAX_CHAR) {
-                                    characters = characters.slice(0, MAX_CHAR);
-                              }
-
-                              // cells は rows × cols だけ作る。文字が無いセルは空白（ ""）のまま
-                              for (let i = 0; i < totalCells; i++) {
-                                    const cell = document.createElement("div");
-                                    cell.className = "cell";
-                                    cell.textContent = "";   // まだ空（文字が無いときはここに残す）
-                                    cell.style.width = `${cellSize}px`;
-                                    cell.style.height = `${cellSize}px`;
-
-                                    // ---- 基本フォントサイズ（スライダー値） ----
-                                    const baseFont = parseInt(fontSizeSlider.value, 10);
-                                    // ±10% の揺らぎを付加（オプションで調節したいならベースフォントに乗算すれば OK）
-                                    const jitter = (Math.random() * 0.2 - 0.1) * baseFont; // -10% ～ +10%
-                                    const finalFont = Math.max(12, Math.floor(baseFont + jitter));
-                                    cell.style.fontSize = `${finalFont}px`;
-
-                                    // ---- 文字濃さ（不透明度） ----
-                                    // opacitySlider は「揺らぎ幅（%）」を表すので、0〜40% のランダム変化を付与
-                                    const opacityJitter = opacitySlider.value / 100; // 0.0‑0.4
-                                    const randOpacity = 1 - (Math.random() * opacityJitter);
-                                    cell.style.opacity = randOpacity.toFixed(2);
-
-                                    gridContainer.appendChild(cell);
-                                    cells.push(cell);
-                              }
-                        }
-
-                        function resetGrid() {
-                              for (let i = 0; i < cells.length; i++) {
-                                    if (cells[i]) {
-                                          cells[i].textContent = "";
-                                          cells[i].classList.remove("pop");
-                                    }
-                              }
-                              revealedCount = 0;
-                              updateProgressText();
-                        }
-
-                        function revealCharacterAtIndex(index) {
-                              if (index >= characters.length || !cells[index]) return;
-                              const cell = cells[index];
-                              const char = characters[index];
-                              cell.textContent = char;
-                              cell.classList.remove("pop");
-                              void cell.offsetWidth;   // 再描画トリガ
-                              cell.classList.add("pop");
-                              setTimeout(() => {
-                                    cell.classList.remove("pop");
-                              }, 350);
-                        }
-
-                        // 5 話取得関数
-                        async function loadLast5Dreams() {
-                            try {
-                                const res = await fetch("/api/dream/last5");
-                                if (!res.ok) throw new Error("取得失敗");
-                                const data = await res.json();       // 配列が返ってくる
-                                // 文字列だけ抽出して配列化
-                                last5Dreams = data.map(d => d.content);
-                                return true;
-                            } catch (e) {
-                                console.error("loadLast5Dreams error:", e);
-                                return false;
-                            }
-                        }
-
-                        // 5 話再生開始
-                        async function startLast5Playback() {
-                            // まだ取得していなければロード
-                            if (last5Dreams.length === 0) {
-                                const ok = await loadLast5Dreams();
-                                if (!ok) {
-                                    alert("直近 5 件の取得に失敗しました");
-                                    return;
-                                }
-                            }
-                            // 既存のタイマーは止す
-                            if (timer) {
-                                clearInterval(timer);
-                                timer = null;
-                            }
-                            // まず現在のグリッドをリセットしてから
-                            resetGrid();
-                            revealedCount = 0;
-                            last5Index = 0;
-                            isAnimating = true;
-                            // 1 件目のテキストで grid を構築
-                            fullText = last5Dreams[last5Index];
-                            characters = fullText.split("");
-                            buildEmptyGrid();          // 文字数が変わってもセルは同じなので再構築は不要だが、表示領域が変わる可能性に備えて
-                            // アニメーション開始（既存の burstReveal が文字単位なので流用）
-                            burstReveal();
-                            timer = setInterval(burstReveal, currentSpeed);
-                        }
-
-                        function burstReveal() {
-                              if (!isAnimating) return;
-                              // 通常文字表示（1 話または 5 話連続中の現在話）
-                              if (revealedCount < characters.length) {
-                                    revealCharacterAtIndex(revealedCount);
-                                    revealedCount += 1;
-                                    updateProgressText();
-                                    return;
-                              }
-
-                              // 今の話が全部表示し終わった
-                              clearInterval(timer);
-                              timer = null;
-                              isAnimating = false;
-
-                              // 5 話モードかどうか判定
-                              if (last5Dreams.length > 0 && last5Index < last5Dreams.length - 1) {
-                                    // 次の話へ自動遷移
-                                    last5Index += 1;
-                                    fullText = last5Dreams[last5Index];
-                                    characters = fullText.split("");
-                                    revealedCount = 0;
-                                    isAnimating = true;
-                                    setTimeout(() => {
-                                          timer = setInterval(burstReveal, currentSpeed);
-                                    }, 500);   // 0.5 秒ブランク
-                                    return;
-                              }
-
-                              // 完了メッセージ
-                              progressStat.textContent = last5Dreams.length > 0 ?
-                                    "✨ 5 話すべて完了 ✨" : "✨ 筆が止まる — 物語が完成 ✨";
-
-                              // Auto‑play がオンの場合は次のランダム夢へ
-                              if (isAutoPlaying) {
-                                    setTimeout(() => fetchDream(), autoPlayDelaySeconds * 1000);
-                              }
-                        }
-
-                        function updateProgressText() {
-                              if (last5Dreams.length > 0) {
-                                    const currentStory = last5Index + 1;
-                                    const shown = Math.min(revealedCount, characters.length);
-                                    progressStat.textContent = `第${currentStory}話 ${shown}/${characters.length}字`;
-                                    return;
-                              }
-                              const shown = Math.min(revealedCount, characters.length);
-                              progressStat.textContent = `${shown} / ${characters.length} 字  曇→晴`;
-                        }
-
-                        function startAnimation() {
-                              if (timer) {
-                                    clearInterval(timer);
-                                    timer = null;
-                              }
-                              // 1 話モードの初期化
-                              last5Dreams = [];   // 通常モードは空にしておく
-                              last5Index   = 0;
-                              resetGrid();
-                              revealedCount = 0;
-                              isAnimating = true;
-                              lastRevealedIndex = 0;
-                              burstReveal();
-                              timer = setInterval(burstReveal, currentSpeed);
-                        }
-
-                        function bindSliders() {
-                              speedSlider.addEventListener("input", (e) => {
-                                    currentSpeed = parseInt(e.target.value, 10);
-                                    speedVal.innerText = currentSpeed + "ms";
-                                    if (isAnimating && timer) {
-                                          clearInterval(timer);
-                                          timer = setInterval(
-                                                burstReveal,
-                                                currentSpeed,
-                                          );
-                                    }
-                              });
-                               // 文字サイズスライダー
-                               fontSizeSlider.addEventListener("input", (e) => {
-                                     const v = e.target.value;
-                                     fontSizeVal.innerText = v + "px";
-                                     // 変更は次回 grid ビルド時に反映させる
-                                     if (!isAnimating) buildEmptyGrid();
-                               });
-
-                               // 濃さ揺らぎスライダー
-                               opacitySlider.addEventListener("input", (e) => {
-                                     const v = e.target.value;
-                                     opacityVal.innerText = v + "%";
-                                     // 変更は次回 grid ビルド時に反映させる
-                                     if (!isAnimating) buildEmptyGrid();
-                               });
-                              
-                              autoPlayDelay.addEventListener("input", (e) => {
-                                    autoPlayDelaySeconds = parseInt(e.target.value, 10);
-                                    delayVal.innerText = autoPlayDelaySeconds + "秒";
-                              });
-
-                              // 5 話連続再生ボタン
-                              playLast5Btn.addEventListener("click", async () => {
-                                    // 5 話連続再生は「自動再生」フラグとは独立して実行
-                                    stopAutoPlay(); // Stop any ongoing auto-play
-                                    await startLast5Playback();
-                              });
-
-                              // 「種を撒く」誘いクリック
-                              seedInvite.addEventListener("click", () => {
-                                    // mode タブの「投稿」へ切り替え
-                                    const postTab = document.querySelector('.mode-tab[data-mode="post"]');
-                                    if (postTab) postTab.click();   // クリックイベントを発火させるだけでモード切替ロジックが走ります
-                              });
-                        }
-
-                        // モード切り替えイベント
-                        modeTabs.forEach((tab) => {
-                              tab.addEventListener("click", () => {
-                                    modeTabs.forEach((t) =>
-                                          t.classList.remove("active"),
-                                    );
-                                    tab.classList.add("active");
-                                    const mode = tab.dataset.mode;
-                                    readArea.classList.remove("active");
-                                    postArea.classList.remove("active");
-                                    adjustArea.classList.remove("active");
-                                    if (mode === "read") {
-                                          readArea.classList.add("active");
-                                          if (timer) {
-                                                clearInterval(timer);
-                                                timer = null;
-                                          }
-                                          // 読みモードに入ったら最新のスライダー設定で再構築
-                                          buildEmptyGrid();
-                                          startAnimation();
-                                    } else if (mode === "post") {
-                                          postArea.classList.add("active");
-                                          stopAutoPlay();
-                                    } else if (mode === "adjust") {
-                                          adjustArea.classList.add("active");
-                                          stopAutoPlay();
-                                    }
-                              });
-                        });
-
-                        // 投稿タブ切り替え
-                        const postTabs = document.querySelectorAll(".post-tab");
-                        const submitTab = document.getElementById("submitTab");
-                        const seedsTab = document.getElementById("seedsTab");
-                        const dreamsTab = document.getElementById("dreamsTab");
-                        
-                        postTabs.forEach((tab) => {
-                              tab.addEventListener("click", () => {
-                                    postTabs.forEach((t) => t.classList.remove("active"));
-                                    tab.classList.add("active");
-                                    
-                                    const tabName = tab.dataset.tab;
-                                    submitTab.classList.remove("active");
-                                    seedsTab.classList.remove("active");
-                                    dreamsTab.classList.remove("active");
-                                    
-                                    if (tabName === "submit") {
-                                          submitTab.classList.add("active");
-                                    } else if (tabName === "seeds") {
-                                          seedsTab.classList.add("active");
-                                          loadSeeds();
-                                    } else if (tabName === "dreams") {
-                                          dreamsTab.classList.add("active");
-                                          loadDreams();
-                                    }
-                              });
-                        });
-                        
-                        // リスト読み込み関数
-                        async function loadSeeds() {
-                              const seedsList = document.getElementById("seedsList");
-                              seedsList.innerHTML = '<div class="loading">読み込み中...</div>';
-                              
-                              try {
-                                    const res = await fetch("/api/seeds");
-                                    const data = await res.json();
-                                    
-                                    if (data.length === 0) {
-                                          seedsList.innerHTML = '<div class="loading">種がありません</div>';
-                                          return;
-                                    }
-                                    
-                                    let html = '';
-                                    data.forEach(seed => {
-                                          html += '<div class="list-item" onclick="useSeed(' + seed.id + ')"><div>種 #' + seed.id + ': ' + seed.content.substring(0, 30) + (seed.content.length > 30 ? '...' : '') + '</div></div>';
-                                    });
-                                    seedsList.innerHTML = html;
-                              } catch (err) {
-                                    seedsList.innerHTML = '<div class="loading">読み込みエラー</div>';
-                              }
-                        }
-                        
-                        async function loadDreams() {
-                              const dreamsList = document.getElementById("dreamsList");
-                              dreamsList.innerHTML = '<div class="loading">読み込み中...</div>';
-                              
-                              try {
-                                    const res = await fetch("/api/dreams?limit=20");
-                                    const data = await res.json();
-                                    
-                                    if (data.length === 0) {
-                                          dreamsList.innerHTML = '<div class="loading">夢がありません</div>';
-                                          return;
-                                    }
-                                    
-                                    let html = '';
-                                    data.forEach(dream => {
-                                          html += '<div class="list-item" onclick="viewDream(' + dream.id + ')"><div>夢 #' + dream.id + ': ' + dream.content.substring(0, 30) + (dream.content.length > 30 ? '...' : '') + '</div><div style="font-size: 0.8rem; color: #a89470;">' + dream.created_at + '</div></div>';
-                                    });
-                                    dreamsList.innerHTML = html;
-                              } catch (err) {
-                                    dreamsList.innerHTML = '<div class="loading">読み込みエラー</div>';
-                              }
-                        }
-                        
-                        async function useSeed(seedId) {
-                              try {
-                                    const res = await fetch(`/api/dream/random?seed_id=${seedId}`);
-                                    if (!res.ok) {
-                                          throw new Error("夢の取得に失敗しました");
-                                    }
-                                    const dream = await res.json();
-                                    viewDream(dream.id);
-                              } catch (err) {
-                                    alert("エラー: " + err.message);
-                              }
-                        }
-                        
-                        function viewDream(dreamId) {
-                              // Switch to read mode and load specific dream
-                              modeTabs.forEach(tab => tab.classList.remove("active"));
-                              document.querySelector('[data-mode="read"]').classList.add("active");
-                              readArea.classList.add("active");
-                              postArea.classList.remove("active");
-                              adjustArea.classList.remove("active");
-                              
-                              fetchDream(dreamId);
-                        }
-
-                        replayBtn.addEventListener("click", () => {
-                              if (timer) {
-                                    clearInterval(timer);
-                                    timer = null;
-                              }
-                              startAnimation();
-                        });
-
-                        newDreamBtn.addEventListener("click", () => {
-                              stopAutoPlay();
-                              fetchDream();
-                        });
-                        
-                        function toggleAutoPlay() {
-                              if (isAutoPlaying) {
-                                    stopAutoPlay();
-                              } else {
-                                    startAutoPlay();
-                              }
-                        }
-                        
-                        function startAutoPlay() {
-                              isAutoPlaying = true;
-                              autoPlayBtn.textContent = "⏸️ 停止";
-                              autoPlayStatus.textContent = "自動再生: ON";
-                              autoPlayStatus.style.background = "#8f6a48";
-                              autoPlayStatus.style.color = "#fef0df";
-                              
-                              // If not currently animating, start with a new dream
-                              if (!isAnimating) {
-                                    fetchDream();
-                              }
-                        }
-                        
-                        function stopAutoPlay() {
-                              isAutoPlaying = false;
-                              autoPlayBtn.textContent = "▶️ 自動再生";
-                              autoPlayStatus.textContent = "自動再生: OFF";
-                              autoPlayStatus.style.background = "#cebb97";
-                              autoPlayStatus.style.color = "#2a211a";
-                              
-                              if (autoPlayTimer) {
-                                    clearTimeout(autoPlayTimer);
-                                    autoPlayTimer = null;
-                              }
-                        }
-                        
-                        autoPlayBtn.addEventListener("click", toggleAutoPlay);
-
-                        // 種投稿フォーム
-                        const seedForm = document.getElementById("seedForm");
-                        seedForm.addEventListener("submit", async (e) => {
-                              e.preventDefault();
-                              const textarea =
-                                    seedForm.querySelector("textarea");
-                              const content = textarea.value.trim();
-                              if (!content) return;
-
-                              try {
-                                    const seedRes = await fetch(
-                                          "/api/seed/submit",
-                                          {
-                                                method: "POST",
-                                                headers: {
-                                                      "Content-Type":
-                                                            "application/json",
-                                                },
-                                                body: JSON.stringify({
-                                                      content: content,
-                                                }),
-                                          },
-                                    );
-                                    const seedData = await seedRes.json();
-                                    if (!seedRes.ok)
-                                          throw new Error(
-                                                seedData.error || "投稿失敗",
-                                          );
-
-                                    alert(
-                                          `種を投稿しました！（ID: ${seedData.id}）
+                    alert(
+                        `種を投稿しました！（ID: ${seedData.id}）
 夢を生成中...`,
-                                    );
-                                    textarea.value = "";
+                    );
+                    textarea.value = "";
 
-                                    const dreamRes = await fetch(
-                                          `/api/dream/random?seed_id=${seedData.id}`,
-                                    );
-                                    const dreamData = await dreamRes.json();
-                                    if (!dreamRes.ok)
-                                          throw new Error(
-                                                dreamData.error || "生成失敗",
-                                          );
+                    const dreamRes = await fetch(
+                        `/api/dream/random?seed_id=${seedData.id}`,
+                    );
+                    const dreamData = await dreamRes.json();
+                    if (!dreamRes.ok)
+                        throw new Error(
+                            dreamData.error || "生成失敗",
+                        );
 
-                                    // 生成された夢を表示
-                                    characters = dreamData.content.split("");
-                                    revealedCount = 0;
-                                    resetGrid();
-                                    startAnimation();
+                    // 生成された夢を表示
+                    characters = dreamData.content.split("");
+                    revealedCount = 0;
+                    resetGrid();
+                    startAnimation();
 
-                                    // 読むモードに切り替え
-                                    modeTabs.forEach((t) =>
-                                          t.classList.remove("active"),
-                                    );
-                                    document
-                                          .querySelector('[data-mode="read"]')
-                                          .classList.add("active");
-                                    readArea.classList.add("active");
-                                    postArea.classList.remove("active");
-                                    adjustArea.classList.remove("active");
+                    // 読むモードに切り替え
+                    modeTabs.forEach((t) =>
+                        t.classList.remove("active"),
+                    );
+                    document
+                        .querySelector('[data-mode="read"]')
+                        .classList.add("active");
+                    readArea.classList.add("active");
+                    postArea.classList.remove("active");
+                    adjustArea.classList.remove("active");
 
-                                    alert("新しい夢が生成されました！");
-                              } catch (err) {
-                                    alert("エラー: " + err.message);
-                              }
-                        });
+                    alert("新しい夢が生成されました！");
+                } catch (err) {
+                    alert("エラー: " + err.message);
+                }
+            });
 
-                        // 初期化
-                        fetchDream();
-                  })();
-            </script>
-      </body>
+            // 初期化
+            fetchDream();
+        })();
+    </script>
+</body>
 </html>
