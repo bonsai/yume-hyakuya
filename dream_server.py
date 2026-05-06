@@ -8,6 +8,7 @@ import json
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
+from typing import List, Dict, Any
 from email.utils import formatdate
 from datetime import datetime
 from dotenv import load_dotenv
@@ -486,6 +487,20 @@ def favicon():
 @app.route('/voice_dream')
 def voice_dream_page():
     return render_template('voice_dream.html')
+
+@app.route('/api/dream/last5')
+def get_last5_dreams():
+    """
+    最新 5 件（または過去の指定範囲）を取得します。
+    デフォルトは created_at の降順で 5 件。
+    """
+    limit = 5
+    dreams = get_all_dreams(limit=limit, offset=0)   # 既存の get_all_dreams を流用
+    # API の format パラメータもそのまま利用できるように
+    fmt = request.args.get('format', 'json')
+    if fmt == 'json':
+        dreams = serialize_dream_data(dreams)
+    return format_response(dreams, fmt)
 
 @app.route('/raw')
 def raw_dream():
