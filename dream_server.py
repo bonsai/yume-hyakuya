@@ -411,7 +411,7 @@ def random_dream():
                 row = c.fetchone()
                 conn.close()
                 if row:
-                    seed_content = row[0]
+                    seed_content = row['content']
         except Exception as e:
             print(f"Database error in random_dream: {e}", file=sys.stderr)
             seed_content = None
