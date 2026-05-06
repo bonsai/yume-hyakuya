@@ -570,6 +570,12 @@
                         ▶️ 自動再生
                     </button>
                 </div>
+                <!-- 朗読（音声読み上げ）ボタン -->
+                <div class="ctrl-group" style="margin-top:8px;">
+                      <button id="readAloudBtn" title="日本語で朗読">
+                            🎧 朗読
+                      </button>
+                </div>
                 <!-- 5 話連続再生ボタン -->
                 <div class="ctrl-group" style="margin-top:8px;">
                     <button id="playLast5Btn">📚 直近5話を連続再生</button>
@@ -1166,9 +1172,9 @@
             function toggleAutoPlay() {
                 if (isAutoPlaying) {
                     stopAutoPlay();
+                } else {
+                    startAutoPlay();
                 }
-            } else {
-                startAutoPlay();
             }
             
             function startAutoPlay() {
